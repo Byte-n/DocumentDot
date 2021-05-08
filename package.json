@@ -1,0 +1,25 @@
+{
+  "name": "document-dot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx webpack --watch",
+    "dev": "webpack-dev-server --open "
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "clean-css": "^5.0.1",
+    "copy-webpack-plugin": "^5.1.1",
+    "css-loader": "^5.0.1",
+    "file-loader": "^6.2.0",
+    "html-webpack-plugin": "^4.5.1",
+    "jquery": "^3.4.1",
+    "style-loader": "^2.0.0",
+    "webpack": "^4.5.0",
+    "webpack-cli": "^3.1.5",
+    "webpack-dev-server": "^3.11.2"
+  }
+}
