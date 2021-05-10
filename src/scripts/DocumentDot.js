@@ -16,7 +16,7 @@ class DocumentDot {
      *          callbackType：'one',      one表示该回调函数在执行之后会被删除，'for ever'代表每次都会执行
      *          delay: 回调函数延时执行，单位ms
      *      },
-     *      enableInitializationAnimation:false,      是否有开场动画
+     *      openingAnimation:false,      是否有开场动画
      *      marginX,                水平间距。文字水平方向的间距marginX=画板宽度-文本宽度
      *      marginY,                垂直间距
      *      fontSize,               默认文本大小，如果文本过大，则后面会自动效准
@@ -26,10 +26,25 @@ class DocumentDot {
      *          text:   string || {text:string,fontSize:number}    非法字符提示文本。
      *      }
      * }
-     * @param param {{canvas:Element||string},{callback:{callback:function(DocumentDot),callbackType:'one'|'for ever',delay:number}},{enableInitializationAnimation:boolean},{marginX:number},{marginY:number},{fontSize:number},{illegal:{enable:boolean,text:string||{text:string,fontSize:number}}}}
+     * @param param {
+     *  {
+     *      canvas:Element||string
+     *  },
+     *  {callback:
+     *      {
+     *      callback:function(DocumentDot),
+     *      callbackType:'one'|'for ever',
+     *      delay:number
+     *      }
+     *  },
+     *  {openingAnimation:boolean},
+     *  {marginX:number},{marginY:number},
+     *  {fontSize:number},
+     *  {illegal:{enable:boolean,text:string||{text:string,fontSize:number}}}}
      * @param texts
      */
     constructor(param, ...texts) {
+        this.enabled = true
         this.canvas = $(param.canvas)[0];
         this.ctx = this.canvas.getContext('2d');
 
@@ -59,14 +74,14 @@ class DocumentDot {
 
         this.defaultTextWhenTheTextIsIllegal = {text: '字体不适配！', fontSize: 222};
         param.callback && (this.callback = param.callback);
-        param.enableInitializationAnimation === true && this._initializationAnimation();
+        param.openingAnimation === true && this._openingAnimation();
         !isNaN(param.marginX) && (this.marginX = param.marginX);
         !isNaN(param.marginY) && (this.marginY = param.marginY);
         !isNaN(param.fontSize) && (this.fontSize = param.fontSize);
         (typeof param.illegal === 'object') && (Object.assign(this.illegal, param.illegal));
     }
 
-    _initializationAnimation() {
+    _openingAnimation() {
         let fs = this.fontSize;
         this.dotList = [new Dot(0, 0, 2),
             new Dot(0, window.innerHeight, 2),
@@ -203,7 +218,6 @@ class DocumentDot {
         this._draw();
     }
 
-
     setFontSize(fontSize) {
         this.ctx.font = fontSize + 'px ' + this.fontFamily;
     }
@@ -255,12 +269,6 @@ class DocumentDot {
                     curX = this.easeInOutCubic(frameNum, curDot.sx, curDot.x - curDot.sx, curDot.frameCount);
                     curY = this.easeInOutCubic(frameNum, curDot.sy, curDot.y - curDot.sy, curDot.frameCount);
                     this.ctx.arc(curX, curY, curDot.radius, 0, 2 * Math.PI);
-                    if (curX === curDot.x) {
-                        console.log('curDot.x')
-                    }
-                    if (curY === curDot.y) {
-                        console.log('curDot.y')
-                    }
                 }
                 curDot.frameNum += 1;
             } else {
@@ -317,6 +325,15 @@ class DocumentDot {
         this.rafId = window.requestAnimationFrame(this._draw.bind(this));
     }
 
+    start(){
+      this.enabled=true;
+      this._draw();
+    }
+    stop(){
+      this.enabled = false;
+      window.cancelAnimationFrame(this.rafId);
+    }
+
 }
 
 class Dot {
@@ -349,6 +366,5 @@ class Dot {
         this.opacity = Math.random();
     }
 }
-
 
 export default DocumentDot;
