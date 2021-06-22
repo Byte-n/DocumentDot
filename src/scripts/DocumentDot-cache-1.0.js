@@ -53,9 +53,9 @@ class DocumentDot {
    */
   constructor(param, ...texts) {
     this.enabled = true
-
     this.canvas = $(param.canvas)[0];
     this.ctx = this.canvas.getContext('2d');
+
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
 
@@ -64,14 +64,17 @@ class DocumentDot {
     this.fontSize = 500;
     this.fontFamily = 'Consolas, Helvetica Neue, Helvetica, Arial, sans-serif';
 
+    this.textArray = [...texts];
     this.marginX = window.innerWidth / 9;
     this.marginY = window.innerHeight / 9;
-
     this.callback = null;
-    this.error = {enable: true, text: {text: 'ERROR！', fontSize: 222}};
-    this.defaultError = {text: 'ERROR!', fontSize: 222};
-    this.dotConfig = {color: '#fff', mode: 'fill'};
+    this.error = {
+      enable: true,
+      text: {text: 'ERROR！', fontSize: 222},
+    }
 
+    this.defaultError = {text: 'ERROR!', fontSize: 222};
+    this.dotConfig = {color: '#fff', mode: 'fill'}
     param.callback && (this.callback = param.callback);
     param.openingAnimation === true && this._openingAnimation();
     !isNaN(param.marginX) && (this.marginX = param.marginX);
@@ -80,33 +83,22 @@ class DocumentDot {
     (typeof param.error === 'object') && (Object.assign(this.error, param.error));
     (typeof param.dotConfig === 'object') && (Object.assign(this.dotConfig, param.dotConfig));
 
-    /**
-     * true 标识当前这一轮粒子绘制完毕，可以开始下一轮
-     * @type {boolean}
-     */
-    this.finished = true;
-    /**
-     * 文本数组
-     * @type {*[]}
-     */
-    this.textArray = [...texts];
-    /**
-     * 当前时刻需要绘制的所有粒子
-     * @type {*[]}
-     */
+
     this.dots = [];
-    /**
-     * 原始的粒子数据
-     * @type {*[]}
-     */
+
     this.dotList = []
-    /**
-     * 上一波的历史粒子
-     * @type {*[]}
-     */
-    this.historyDot = [];
+    this.hisDotList = [];
+
+    this.dotContainer = []
+    this.hisDotContainer = [];
+    this.dotContainerTemp = []
+    this.hisDotContainerTemp = [];
+
+    this.finished = true;
 
     this._resetCanvas();
+
+    this.caches = [];
   }
 
   /**
@@ -133,23 +125,21 @@ class DocumentDot {
     this.interval = setInterval(function () {
       if (self.textArray.length === 0) {
         //等待完成
-        if (!self.finished) {
-          return;
-        }
-
-        clearInterval(self.interval);
-        self.interval = null;
-
-        if (self.callback === null || !self.callback.callback instanceof Function) {
-          self.callback = null;
-          return;
-        }
-        setTimeout(function () {
-          self.callback.callback(self);
-          if (self.callback.callbackType === 'one') {
+        if (self.finished) {
+          clearInterval(self.interval);
+          self.interval = null;
+          if (self.callback != null && self.callback.callback instanceof Function) {
+            setTimeout(function () {
+              self.callback.callback(self);
+              if (self.callback.callbackType === 'one') {
+                self.callback = null;
+              }
+            }, self.callback.delay ? self.callback.delay : 0);
+          } else {
             self.callback = null;
           }
-        }, self.callback.delay ? self.callback.delay : 0);
+        }
+        return;
       }
       if (self.finished === true) {
         self._emitDot(self.textArray.shift());
@@ -183,25 +173,27 @@ class DocumentDot {
    * @private
    */
   _emitDot(param) {
-    let text = '';
+    let text;
     let fontSize_ = this.fontSize;
 
     if (typeof param === 'object') {
-      text = param.text;
+      text = param.text.trim();
       if (!isNaN(param.fontSize)) {
         fontSize_ = param.fontSize
       }
     } else if (typeof param === 'string') {
-      text = param;
+      text = param.trim();
     } else if (typeof param === 'function') {
-      text = param();
+      text = param().trim();
+    } else {
+      text = 'NULL';
     }
-    text.trim();
+
     if (text.length === 0) {
       return;
     }
 
-    if (this.rafId) window.cancelAnimationFrame(this.rafId);
+    if (this.rafId) cancelAnimationFrame(this.rafId);
 
     //  支持两行，用 '\n' 分割
     let strings = text.split('\n');
@@ -214,11 +206,9 @@ class DocumentDot {
       text = strings[i];
       //字体大小优化
       this._setFontSize(fontSize_);
-      fontSize_ = Math.min(
-        fontSize_,
+      fontSize_ = Math.min(fontSize_,
         ((this.canvas.width - this.marginX) / this.ctx.measureText(text).width) * fontSize_,
-        ((this.canvas.height - this.marginY) / fontSize_) * (this._isNumber(text) ? 1 : 0.5) * fontSize_
-      );
+        ((this.canvas.height - this.marginY) / fontSize_) * (this._isNumber(text) ? 1 : 0.5) * fontSize_);
       this._setFontSize(fontSize_);
 
       let h;
@@ -231,23 +221,29 @@ class DocumentDot {
     }
 
 
-    this.historyDot = this.dotList;
+    this.hisDotList = this.dotList;
+
     this.dotList = [];
 
-    this._analyzeCanvas();
+    this.hisDotList = this.dotContainer;
+
+    this.dotContainer = this._analyzeCanvas();
+    this.dotContainerTemp = this.dotContainer.concat();
+
+    this._spliceDot();
+
+    this.caches = [];
 
     //初始化失败
     if (this.dotList.length === 0) {
       //重置，不然dotList就是空数组
-      this.dotList = this.historyDot;
+      this.dotList = this.hisDotList;
       if (this.error.enable === true) {
-        let t = this.error.text;
-        if (this.error.text instanceof Function) {
-          t = this.error.text();
-        }
+        //避免提示字符也是非法字符
+        let t = (typeof this.error.text === 'function') ? this.error.text() : this.error.text;
         this.textArray.unshift(t === text ? this.defaultError : t);
       } else {
-        //清空画板,因为画板上面可能会有未能被识别的像素
+        //可以不用清空画板？因为按理来说，如果docList为空，则画板上应该没有像素被绘制
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       }
       this.finished = true;
@@ -259,12 +255,20 @@ class DocumentDot {
     this._draw();
   }
 
+  _spliceDot(limit = 500) {
+    this.dotList = this.dotContainerTemp.splice(0, limit);
+  }
+
+  _spliceDotFinished() {
+    return this.hisDotContainer.length === 0 && this.dotContainerTemp.length === 0;
+  }
+
   /**
    *  数据处理
    * @private
    */
   _data() {
-    this.dots = [];
+    this.dots = []
     let len = this.dotList.length;
     //如果当前粒子的数组为空，那么历史数组的粒子就找不到动画的目的地
     //如果historyDot为空，则什么都不会绘制，如果historyDot不为空，则继续绘制就会出现异常（因为dotList为空）
@@ -275,19 +279,21 @@ class DocumentDot {
     }
 
     let len_ = 0;
-    let hisLen = this.historyDot.length;
     let curDot = null;
+    let hisLen = this.hisDotList.length;
     let frameNum;
-    let frameCount;
+    let frameCount
     for (let i = 0; i < len; i++) {
       curDot = this.dotList[i];
       frameNum = curDot.frameNum;
       frameCount = curDot.frameCount;
+
       if (curDot.delayCount < curDot.delay) {
         curDot.delayCount++;
         continue;
       }
 
+      // 未完成移动
       if (frameNum < frameCount) {
         if (hisLen < len) {
           curDot.move(frameNum)
@@ -295,6 +301,7 @@ class DocumentDot {
         }
         curDot.frameNum++;
       } else {
+        // 完成移动
         len_++;
         curDot.currentPosition = {x: curDot.x, y: curDot.y}
         this.dots.push(curDot)
@@ -307,33 +314,45 @@ class DocumentDot {
     }
 
     //历史粒子
-    let temphist = [];
+    let temphistDots = [];
+    //已到达目的地的历史粒子数量
     let targetDot;
     let hisLen_ = 0;
     for (let i = 0; i < hisLen; i++) {
-      let hd = this.historyDot[i];
+      let hd = this.hisDotList[i];
       if (hd.finished) {
         hisLen_++;
         continue;
       }
-
-      if (temphist.length === 0) {
+      //通过splice方式，尽量确保"雨露均沾"
+      if (temphistDots.length === 0) {
         if (this.dotList.length === 0) {
           continue;
         }
-        // 克隆数组（复制数组原始的引用）
-        temphist = this.dotList.slice(0);
+        Object.assign(temphistDots, this.dotList);
       }
-      targetDot = hd.targetDot || temphist.splice(~~(temphist.length * Math.random()), 1)[0];
+      targetDot = hd.targetDot || temphistDots.splice(~~(temphistDots.length * Math.random()), 1)[0];
       hd.finished = hd.moveTo(targetDot)
       hd.targetDot = targetDot;
       this.dots.push(hd)
     }
 
+
+    // 完成
     if (hisLen_ === hisLen && len_ === len) {
-      this.historyDot = [];
+      this.hisDotList = [];
+      if (!this._spliceDotFinished()) {
+        this.caches.unshift({
+          imageData: this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height),
+          dots: this.dotList
+        })
+        this._spliceDot();
+        return;
+      }
+
       this.finished = true;
     }
+
   }
 
   /**
@@ -346,6 +365,11 @@ class DocumentDot {
     this._resetCanvas();
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    if (this.caches[0] && this.caches[0].imageData) {
+      this.ctx.putImageData(this.caches[0].imageData, 0, 0)
+    }
+
     this.ctx.beginPath();
 
     let d, pos;
@@ -359,16 +383,16 @@ class DocumentDot {
     this.ctx.closePath();
     switch (this.dotConfig.mode) {
       case "fill":
-        this.ctx.fill();
-        break;
+        this.ctx.fill()
+        break
       case 'stroke':
-        this.ctx.stroke();
-        break;
+        this.ctx.stroke()
+        break
       case 'fill-stroke':
-        this.ctx.stroke();
-        break;
+        this.ctx.stroke()
+        break
       default:
-        this.ctx.fill();
+        this.ctx.fill()
     }
 
     this.rafId = window.requestAnimationFrame(this._draw.bind(this));
@@ -385,8 +409,8 @@ class DocumentDot {
 
   _resetCanvas() {
     this.ctx.textBaseline = "top";
-    this.ctx.strokeStyle = this.dotConfig.color;
-    this.ctx.fillStyle = this.dotConfig.color;
+    this.ctx.strokeStyle = this.dotConfig.color
+    this.ctx.fillStyle = this.dotConfig.color
   }
 
   _isNumber(n) {
@@ -398,6 +422,7 @@ class DocumentDot {
    * @private
    */
   _analyzeCanvas() {
+    let arr = [];
     let m = Math.random();
     let imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
     for (let x = 0; x < imgData.width; x += 6) {
@@ -405,10 +430,11 @@ class DocumentDot {
         let i = (y * imgData.width + x) * 4;
         if (imgData.data[i + 3] > 0 && imgData.data[i] > 0 && (imgData[i] === imgData[i + 1] && imgData[i + 1] === imgData[i + 2])) {
           // if (imgData.data[i + 3] > 128 && imgData.data[i] > 250 && (imgData[i] === imgData[i + 1] && imgData[i + 1] === imgData[i + 2])) {
-          this.dotList.push(new Dot(x, y, 2, m));
+          arr.push(new Dot(x, y, 2, m));
         }
       }
     }
+    return arr;
   }
 
   start() {
@@ -470,6 +496,7 @@ class Dot {
     let y = this.easeInOutCubic(targetDot.frameNum, this.y, targetDot.y - this.y, targetDot.frameCount);
     this.frameNum++;
     this.currentPosition = {x, y}
+    // 也可以使用frameNum和frameCount作为判断?
     return x === targetDot.x && y === targetDot.y;
   }
 }
