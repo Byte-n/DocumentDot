@@ -19,7 +19,7 @@ $(function () {
       callbackType: 'for ever',
       delay: 0
     },
-    enableInitializationAnimation: true,
+    openingAnimation: true,
     dotConfig: {
       color: '#fff8f8',
       mode: 'fill'
