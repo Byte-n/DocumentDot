@@ -38,9 +38,9 @@ class DocumentDot {
    *  },
    *  {callback:
    *      {
-   *      callback:function(DocumentDot),
-   *      callbackType:'one'|'for ever',
-   *      delay:number
+   *          callback: function(DocumentDot),
+   *          callbackType: ('one' | 'for ever'),
+   *          delay: number
    *      }
    *  },
    *  {openingAnimation:boolean},
@@ -54,31 +54,6 @@ class DocumentDot {
   constructor(param, ...texts) {
     this.enabled = true
 
-    this.canvas = $(param.canvas)[0];
-    this.ctx = this.canvas.getContext('2d');
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
-
-    this.rafId = null;
-
-    this.fontSize = 500;
-    this.fontFamily = 'Consolas, Helvetica Neue, Helvetica, Arial, sans-serif';
-
-    this.marginX = window.innerWidth / 9;
-    this.marginY = window.innerHeight / 9;
-
-    this.callback = null;
-    this.error = {enable: true, text: {text: 'ERROR！', fontSize: 222}};
-    this.defaultError = {text: 'ERROR!', fontSize: 222};
-    this.dotConfig = {color: '#fff', mode: 'fill'};
-
-    param.callback && (this.callback = param.callback);
-    param.openingAnimation === true && this._openingAnimation();
-    !isNaN(param.marginX) && (this.marginX = param.marginX);
-    !isNaN(param.marginY) && (this.marginY = param.marginY);
-    !isNaN(param.fontSize) && (this.fontSize = param.fontSize);
-    (typeof param.error === 'object') && (Object.assign(this.error, param.error));
-    (typeof param.dotConfig === 'object') && (Object.assign(this.dotConfig, param.dotConfig));
 
     /**
      * true 标识当前这一轮粒子绘制完毕，可以开始下一轮
@@ -105,6 +80,32 @@ class DocumentDot {
      * @type {*[]}
      */
     this.historyDot = [];
+
+    this.canvas = $(param.canvas)[0];
+    this.ctx = this.canvas.getContext('2d');
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+
+    this.rafId = null;
+
+    this.fontSize = 500;
+    this.fontFamily = 'Consolas, Helvetica Neue, Helvetica, Arial, sans-serif';
+
+    this.marginX = window.innerWidth / 9;
+    this.marginY = window.innerHeight / 9;
+
+    this.callback = null;
+    this.error = {enable: true, text: {text: 'ERROR！', fontSize: 222}};
+    this.defaultError = {text: 'ERROR!', fontSize: 222};
+    this.dotConfig = {color: '#fff', mode: 'fill'};
+
+    param.callback && (this.callback = param.callback);
+    param.openingAnimation === true && this._openingAnimation();
+    !isNaN(param.marginX) && (this.marginX = param.marginX);
+    !isNaN(param.marginY) && (this.marginY = param.marginY);
+    !isNaN(param.fontSize) && (this.fontSize = param.fontSize);
+    (typeof param.error === 'object') && (Object.assign(this.error, param.error));
+    (typeof param.dotConfig === 'object') && (Object.assign(this.dotConfig, param.dotConfig));
 
     this._resetCanvas();
   }
@@ -170,7 +171,7 @@ class DocumentDot {
       this.textArray.push(texts[i]);
     }
 
-    this.interval === null && this.animation();
+    !this.interval && this.animation();
   }
 
   /**
@@ -341,6 +342,9 @@ class DocumentDot {
    * @private
    */
   _draw() {
+    if (! this.enabled){
+      return;
+    }
     this._data();
 
     this._resetCanvas();
