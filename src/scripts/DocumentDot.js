@@ -27,7 +27,7 @@ class DocumentDot {
    *          text:   string || {text:string,fontSize:number}    非法字符提示文本。
    *      },
    *      dotConfig: {          // 粒子设置
-   *        color: string,
+   *        color: string || {fill:string,stroke:string},
    *        mode: 'fill-stroke'|'stroke'|'fill',
    *        r: number  粒子半径
    *
@@ -51,7 +51,7 @@ class DocumentDot {
    *      text: string||{text:string,fontSize:number}
    *    },
    *    dotConfig?: {
-   *      color:string,
+   *      color:string|| {fill:string,stroke:string},
    *      mode:'fill-stroke'|'stroke'|'fill',
    *      r: number
    *      }
@@ -104,7 +104,7 @@ class DocumentDot {
     this.callback = null;
     this.error = {enable: true, text: {text: 'ERROR！', fontSize: 222}};
     this.defaultError = {text: 'ERROR!', fontSize: 222};
-    this.dotConfig = {color: '#fff', mode: 'fill', r: 2};
+    this.dotConfig = {color: {fill: '#fff', stroke: '#fff'}, mode: 'fill', r: 2};
 
     param.callback && (this.callback = param.callback);
     param.openingAnimation === true && this._openingAnimation();
@@ -112,8 +112,12 @@ class DocumentDot {
     !isNaN(param.marginY) && (this.marginY = param.marginY);
     !isNaN(param.fontSize) && (this.fontSize = param.fontSize);
     (typeof param.error === 'object') && (Object.assign(this.error, param.error));
+    let dc = this.dotConfig.color;
+    if (param.dotConfig && typeof param.dotConfig.color === 'object') {
+            Object.assign(dc,param.dotConfig.color);
+    }
     (typeof param.dotConfig === 'object') && (Object.assign(this.dotConfig, param.dotConfig));
-
+    this.dotConfig.color = dc;
     this._resetCanvas();
   }
 
@@ -218,6 +222,7 @@ class DocumentDot {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "#fff";
 
+    let h;
     for (let i = 0; i < length; i++) {
       text = strings[i];
       //字体大小优化
@@ -229,7 +234,6 @@ class DocumentDot {
       );
       this._setFontSize(fontSize_);
 
-      let h;
       if (length === 2) {
         h = this.canvas.height / 2 - (fontSize_ * (1 - i));
       } else {
@@ -264,7 +268,7 @@ class DocumentDot {
       this.finished = false;
     }
 
-    this._draw();
+    this._draw(text, h);
   }
 
   /**
@@ -348,7 +352,8 @@ class DocumentDot {
    *
    * @private
    */
-  _draw() {
+  _draw(text, h) {
+    // window.text=text;
     if (!this.enabled) {
       return;
     }
@@ -358,12 +363,13 @@ class DocumentDot {
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.beginPath();
+    // this.ctx.fillText(text, this.canvas.width / 2 - this.ctx.measureText(text).width / 2, h);
 
     let d, pos;
     for (let i = 0; i < this.dots.length; i++) {
       d = this.dots[i]
       pos = d.currentPosition;
-      this.ctx.moveTo(pos.x+this.dotConfig.r, pos.y)
+      this.ctx.moveTo(pos.x + this.dotConfig.r, pos.y)
       this.ctx.arc(pos.x, pos.y, d.radius, 0, 2 * Math.PI);
     }
 
@@ -376,13 +382,14 @@ class DocumentDot {
         this.ctx.stroke();
         break;
       case 'fill-stroke':
+        this.ctx.fill();
         this.ctx.stroke();
         break;
       default:
         this.ctx.fill();
     }
 
-    this.rafId = window.requestAnimationFrame(this._draw.bind(this));
+    this.rafId = window.requestAnimationFrame(this._draw.bind(this, text, h));
   }
 
   /**
@@ -396,8 +403,8 @@ class DocumentDot {
 
   _resetCanvas() {
     this.ctx.textBaseline = "top";
-    this.ctx.strokeStyle = this.dotConfig.color;
-    this.ctx.fillStyle = this.dotConfig.color;
+    this.ctx.strokeStyle = this.dotConfig.color.stroke || this.dotConfig.color;
+    this.ctx.fillStyle = this.dotConfig.color.fill || this.dotConfig.color;
   }
 
   _isNumber(n) {
@@ -412,8 +419,8 @@ class DocumentDot {
     let m = Math.random();
     let imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
     let r = this.dotConfig.r;
-    for (let x = 0; x < imgData.width; x += ((r * 2) + 3)) {
-      for (let y = 0; y < imgData.height; y += ((r * 2) + 3)) {
+    for (let x = 0; x < imgData.width; x += ((r * 2) + 2)) {
+      for (let y = 0; y < imgData.height; y += ((r * 2) + 2)) {
         let i = (y * imgData.width + x) * 4;
         if (imgData.data[i + 3] === 255) {
           // if (imgData.data[i + 3] > 0 && imgData.data[i] > 0 && (imgData[i] === imgData[i + 1] && imgData[i + 1] === imgData[i + 2])) {

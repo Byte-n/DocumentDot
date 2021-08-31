@@ -21,9 +21,9 @@ $(function () {
     },
     openingAnimation: false,
     dotConfig: {
-      color: '#ffffff',
-      mode: 'fill',
-      r: 2
+      color: '#fff',
+      mode: 'stroke',
+      r: 5
     }
   }, "")
   documentDot.animation();
