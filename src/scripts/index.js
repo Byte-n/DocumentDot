@@ -11,7 +11,7 @@ $(function () {
   document.body.append(canvas[0])
 
   window.documentDot = new DocumentDot({
-    canvas: canvas,
+    canvas: canvas[0],
     callback: {
       callback: function () {
         documentDot.emitDot("文档", "文档粒子", '粒子')
@@ -19,13 +19,13 @@ $(function () {
       callbackType: 'for ever',
       delay: 0
     },
-    openingAnimation: true,
+    openingAnimation: false,
     dotConfig: {
-      color: '#fff8f8',
-      mode: 'fill'
+      color: '#ffffff',
+      mode: 'fill',
+      r: 2
     }
   }, "")
-
   documentDot.animation();
 
 

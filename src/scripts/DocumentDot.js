@@ -28,27 +28,34 @@ class DocumentDot {
    *      },
    *      dotConfig: {          // 粒子设置
    *        color: string,
-   *        mode: 'fill-stroke'|'stroke'|'fill'
+   *        mode: 'fill-stroke'|'stroke'|'fill',
+   *        r: number  粒子半径
+   *
    *        }
    *
    * }
-   * @param param {
-   *  {
-   *      canvas:Element||string
-   *  },
-   *  {callback:
-   *      {
-   *          callback: function(DocumentDot),
-   *          callbackType: ('one' | 'for ever'),
-   *          delay: number
+   *
+   *  @param param{{
+   *    canvas?: HTMLCanvasElement || string,
+   *    callback?: {
+   *       callback: function(DocumentDot): void,
+   *       callbackType: ('one' | 'for ever'),
+   *       delay: number
+   *    },
+   *    openingAnimation?:boolean,
+   *    marginX?:number,
+   *    marginY?:number,
+   *    fontSize?:number,
+   *    error?: {
+   *      enable:boolean,
+   *      text: string||{text:string,fontSize:number}
+   *    },
+   *    dotConfig?: {
+   *      color:string,
+   *      mode:'fill-stroke'|'stroke'|'fill',
+   *      r: number
    *      }
-   *  },
-   *  {openingAnimation:boolean},
-   *  {marginX:number},{marginY:number},
-   *  {fontSize:number},
-   *  {error:{enable:boolean,text:string||{text:string,fontSize:number}}},
-   *  {dotConfig:{color:string,mode:'fill-stroke'|'stroke'|'fill'}}
-   *  }
+   *  }}
    * @param texts
    */
   constructor(param, ...texts) {
@@ -97,7 +104,7 @@ class DocumentDot {
     this.callback = null;
     this.error = {enable: true, text: {text: 'ERROR！', fontSize: 222}};
     this.defaultError = {text: 'ERROR!', fontSize: 222};
-    this.dotConfig = {color: '#fff', mode: 'fill'};
+    this.dotConfig = {color: '#fff', mode: 'fill', r: 2};
 
     param.callback && (this.callback = param.callback);
     param.openingAnimation === true && this._openingAnimation();
@@ -342,7 +349,7 @@ class DocumentDot {
    * @private
    */
   _draw() {
-    if (! this.enabled){
+    if (!this.enabled) {
       return;
     }
     this._data();
@@ -356,7 +363,7 @@ class DocumentDot {
     for (let i = 0; i < this.dots.length; i++) {
       d = this.dots[i]
       pos = d.currentPosition;
-      this.ctx.moveTo(pos.x, pos.y)
+      this.ctx.moveTo(pos.x+this.dotConfig.r, pos.y)
       this.ctx.arc(pos.x, pos.y, d.radius, 0, 2 * Math.PI);
     }
 
@@ -404,12 +411,14 @@ class DocumentDot {
   _analyzeCanvas() {
     let m = Math.random();
     let imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-    for (let x = 0; x < imgData.width; x += 6) {
-      for (let y = 0; y < imgData.height; y += 6) {
+    let r = this.dotConfig.r;
+    for (let x = 0; x < imgData.width; x += ((r * 2) + 3)) {
+      for (let y = 0; y < imgData.height; y += ((r * 2) + 3)) {
         let i = (y * imgData.width + x) * 4;
-        if (imgData.data[i + 3] > 0 && imgData.data[i] > 0 && (imgData[i] === imgData[i + 1] && imgData[i + 1] === imgData[i + 2])) {
+        if (imgData.data[i + 3] === 255) {
+          // if (imgData.data[i + 3] > 0 && imgData.data[i] > 0 && (imgData[i] === imgData[i + 1] && imgData[i + 1] === imgData[i + 2])) {
           // if (imgData.data[i + 3] > 128 && imgData.data[i] > 250 && (imgData[i] === imgData[i + 1] && imgData[i + 1] === imgData[i + 2])) {
-          this.dotList.push(new Dot(x, y, 2, m));
+          this.dotList.push(new Dot(x, y, r, m));
         }
       }
     }
