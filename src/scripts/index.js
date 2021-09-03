@@ -1,35 +1,35 @@
 import DocumentDot from "./DocumentDot";
 
 
-$(function () {
-  let canvas = $(`<canvas width="${window.innerWidth}" height="${window.innerHeight}"></canvas>`)
-    .css({
-      position: "fixed",
-      top: 0,
-      left: 0
-    });
-  document.body.append(canvas[0])
+(function () {
+  let canvas = document.createElement('canvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.position = 'fixed'
+  canvas.style.top = '0'
+  canvas.style.left = '0'
+
+  document.body.append(canvas)
 
   window.documentDot = new DocumentDot({
-    canvas: canvas[0],
+    canvas: canvas,
     callback: {
-      callback: function () {
-        documentDot.emitDot("文档", "文档粒子", '粒子')
+      callback(_d) {
+        documentDot.emitDot("1", "文档粒子")
       },
       callbackType: 'for ever',
       delay: 0
     },
-    openingAnimation: false,
+    openingAnimation: true,
     dotConfig: {
       color: '#fff',
-      mode: 'stroke',
-      r: 5
+      mode: 'fill',
+      r: 2
     }
-  }, "")
+  }, "");
+
   documentDot.animation();
-
-
-})
+})();
 
 
 

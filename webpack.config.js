@@ -15,10 +15,10 @@ module.exports = {
     },
     module: {
         rules: [
-            {
-                test: /\.css$/,   // 正则表达式，表示.css后缀的文件
-                use: ['style-loader', 'css-loader']   // 针对css文件使用的loader，注意有先后顺序，数组项越靠后越先执行
-            },
+            // {
+            //     test: /\.css$/,   // 正则表达式，表示.css后缀的文件
+            //     use: ['style-loader', 'css-loader']   // 针对css文件使用的loader，注意有先后顺序，数组项越靠后越先执行
+            // },
             {
                 test: /\.(png|jpg|gif|svg|webp)$/,
                 use: {
@@ -47,12 +47,6 @@ module.exports = {
             template: './src/index.html',     //本地html文件模板的地址
             // hash: true,
             chunks: ['./scripts/index'] // 与entry 出对应的键值对的Key一致
-        }),
-        // 全局变量设置
-        new webpack.ProvidePlugin({
-            $: "jquery",
-            jQuery: "jquery",
-            "window.jQuery": "jquery"
         }),
         //静态文件处理
         new CopyWebpackPlugin([
