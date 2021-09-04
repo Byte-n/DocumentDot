@@ -59,6 +59,12 @@ module.exports = {
                     return new CleanCSS({level: 1}).minify(content).styles;
                 }
             }
+        ]),
+        new CopyWebpackPlugin([
+            {
+                from: __dirname + '/src/res',
+                to: 'res'
+            }
         ])
     ]
 };
