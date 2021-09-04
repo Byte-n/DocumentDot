@@ -616,7 +616,7 @@ class DocumentDot {
       let d, d2;
       let l = dos.length;
       while (this.historyDot.length !== 0) {
-        d2 = this.historyDot.pop();
+        d2 = this.historyDot.splice(~~(this.historyDot.length*Math.random()),1)[0];
         d = dos[~~(l * Math.random())].clone();
         d2.finishdRemove = true;
         d2.setNewTargetDot(d.targetDot);
@@ -649,7 +649,7 @@ class DocumentDot {
    * @return {Dot}
    */
   createDot(config) {
-    let dot = this.historyDot.shift();
+    let dot = this.historyDot.splice(~~(this.historyDot.length*Math.random()),1)[0];
     if (dot) {// 回用历史粒子
       dot.set({
         initDot: config.initDot,

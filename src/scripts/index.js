@@ -35,16 +35,25 @@ import ImageTools from "./ImageTools";
     },
     openingAnimation: true,
     dotConfig: {
-      color(_mode, _dot) {
-        return Math.random() < 0.5 ?
-          hsla.getRelativelyColor() : hsla.increasingColor(0.2);
+      color:{
+        fill:'#fff',
+        stroke:'#e7e7e7'
       },
+      // color(_mode, _dot) {
+      //   if (hsla.speed > 50) {
+      //     hsla.speed = 0;
+      //   }
+      //   hsla.speed = Math.random() * 50
+      //   return  hsla.increasingColor(0);
+      //   // return Math.random() < 0.5 ?
+      //   //   hsla.getRelativelyColor() : hsla.increasingColor(0.2);
+      // },
       ctxMode: 'fill-stroke',
       r: 3,
       cache: true,
       initDotMode: 'angle'
     }
-  }, '');
+  }, 'a','a');
 
   let can = document.createElement('canvas');
   can.width = documentDot.canvas.width;
