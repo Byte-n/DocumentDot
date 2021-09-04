@@ -37,8 +37,8 @@ class DocumentDot {
    *    canvas: HTMLCanvasElement,
    *    callback: {
    *      delay: number,
-   *      callback: (function(DocumentDot):void),
-   *      callbackType: ('one' | 'forever')
+   *      callback: function(DocumentDot):void,
+   *      callbackType: 'one' | 'forever'
    *    },
    *    openingAnimation?:boolean,
    *    marginX?:number,
@@ -71,6 +71,7 @@ class DocumentDot {
    *  }
    */
   constructor(param, ...texts) {
+    // noinspection JSUnusedGlobalSymbols
     this.enabled = true
 
     /**
@@ -112,15 +113,17 @@ class DocumentDot {
     this.historyDot = [];
 
     this.canvas = param.canvas;
+    this.tempCanvas = document.createElement('canvas');
+    this.tempCanvas.width = this.canvas.width;
+    this.tempCanvas.height = this.canvas.height;
     this.ctx = this.canvas.getContext('2d');
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    this.tempCtx = this.tempCanvas.getContext('2d');
+    this.tempCtx.textBaseline = "top";
 
     this.rafId = null;
 
     this.fontSize = 500;
     this.fontFamily = 'Consoles, Helvetica, Helvetica, Arial, sans-serif';
-
     this.marginX = window.innerWidth / 10;
     this.marginY = window.innerHeight / 10;
 
@@ -190,7 +193,6 @@ class DocumentDot {
       initDotMode: idm
     };
 
-    this._resetCanvas();
     this.openingAnimation === true && this._openingAnimation();
   }
 
@@ -199,7 +201,6 @@ class DocumentDot {
    * @private
    */
   _openingAnimation() {
-    let fs = this.fontSize;
     this.dotList = [
       new Dot({
         initDot: {x: 0, y: 0},
@@ -234,16 +235,14 @@ class DocumentDot {
         cache: this.dotConfig.cache
       })
     ]
-    this.fontSize = 99;
-    this._emitDot('.');
-    this.fontSize = fs;
+    this.textArray.unshift({text: '.', fontSize: 99})
   }
 
   /**
    * 开始动画
    */
   animation() {
-    if (typeof this.interval ==="number"  ) {
+    if (typeof this.interval === "number") {
       return;
     }
     let self = this;
@@ -258,12 +257,18 @@ class DocumentDot {
         clearInterval(self.interval);
         self.interval = null;
 
+        // 没有回调函数
         if (!self.callback.callback instanceof Function) {
           self.callback = null;
+          self.stop();
           return;
         }
+        // 有回调函数
         setTimeout(function () {
+          self.stop();
+          // 执行回调函数
           self.callback.callback(self);
+          // 是否移除回调函数
           if (self.callback.callbackType === 'one') {
             self.callback = null;
           }
@@ -368,40 +373,38 @@ class DocumentDot {
       return;
     }
 
-    if (this.rafId) window.cancelAnimationFrame(this.rafId);
-
     //  支持两行，用 '\n' 分割
     let strings = text.split('\n');
     let length = strings.length > 1 ? 2 : 1;
 
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.fillStyle = "#fff";
+    this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
+    this.tempCtx.fillStyle = "#000000";
 
     let h;
     for (let i = 0; i < length; i++) {
       text = strings[i];
       //字体大小优化
-      this._setFontSize(fontSize_);
+      this.tempCtx.font = fontSize_ + 'px ' + this.fontFamily;
       fontSize_ = Math.min(
         fontSize_,
-        ((this.canvas.width - this.marginX) / this.ctx.measureText(text).width) * fontSize_,
-        ((this.canvas.height - this.marginY) / fontSize_) * (this._isNumber(text) ? 1 : 0.5) * fontSize_
+        ((this.tempCanvas.width - this.marginX) / this.tempCtx.measureText(text).width) * fontSize_,
+        ((this.tempCanvas.height - this.marginY) / fontSize_) * (this._isNumber(text) ? 1 : 0.5) * fontSize_
       );
-      this._setFontSize(fontSize_);
+      this.tempCtx.font = fontSize_ + 'px ' + this.fontFamily;
 
       if (length === 2) {
-        h = this.canvas.height / 2 - (fontSize_ * (1 - i));
+        h = this.tempCanvas.height / 2 - (fontSize_ * (1 - i));
       } else {
-        h = this.canvas.height / 2 - (fontSize_ / 2);
+        h = this.tempCanvas.height / 2 - (fontSize_ / 2);
       }
-      this.ctx.fillText(text, this.canvas.width / 2 - this.ctx.measureText(text).width / 2, h);
+      this.tempCtx.fillText(text, this.tempCanvas.width / 2 - this.tempCtx.measureText(text).width / 2, h);
     }
 
 
     this.historyDot = this.dotList;
 
     this.dotList = this._analyzeCanvas({
-      imageData: this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height),
+      imageData: this.tempCtx.getImageData(0, 0, this.tempCanvas.width, this.tempCanvas.height),
       initDotMode,
       ctxMode: this.dotConfig.ctxMode,
       r: this.dotConfig.r,
@@ -414,13 +417,14 @@ class DocumentDot {
     if (this.dotList.length === 0) {
       //重置，不然dotList就是空数组
       this.dotList = this.historyDot;
-      //清空画板,因为画板上面可能会有未能被识别的像素
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.finished = true;
-      console.error('无法绘制：', text)
+      console.error('无法绘制：', text);
+      return;
     }
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this._draw()
+    this.finished = false;
+    if (this.rafId === null) {
+      this.start();
+    }
   }
 
   /**
@@ -464,14 +468,14 @@ class DocumentDot {
     if (this.dotList.length === 0) {
       //重置，不然dotList就是空数组
       this.dotList = this.historyDot;
-      //清空画板,因为画板上面可能会有未能被识别的像素
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.finished = true;
-      console.error('无法绘制：imageData - length: ', imageData.data.length)
+      console.error('无法绘制：imageData - length: ', imageData.data.length);
+      return;
     }
-    if (this.rafId) window.cancelAnimationFrame(this.rafId);
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this._draw();
+    this.finished = false;
+    if (this.rafId === null) {
+      this.start();
+    }
   }
 
   /**
@@ -510,8 +514,10 @@ class DocumentDot {
    * @private
    */
   _draw() {
+    console.log(1)
     this._data();
-    if (this.finished){
+    if (this.finished) {
+      this.cancelAnimationFrame();
       return;
     }
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -675,24 +681,11 @@ class DocumentDot {
     }
   }
 
-  /**
-   * 设置字体
-   * @param fontSize{number}
-   * @private
-   */
-  _setFontSize(fontSize) {
-    this.ctx.font = fontSize + 'px ' + this.fontFamily;
-  }
-
-  _resetCanvas() {
-    this.ctx.textBaseline = "top";
-  }
 
   _isNumber(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
 
-  // noinspection JSUnusedGlobalSymbols
   start() {
     this.enabled = true;
     this._draw();
@@ -701,7 +694,14 @@ class DocumentDot {
   // noinspection JSUnusedGlobalSymbols
   stop(rightNow = false) {
     this.enabled = false;
-    rightNow === true && window.cancelAnimationFrame(this.rafId);
+    if (rightNow === true) {
+      this.cancelAnimationFrame();
+    }
+  }
+
+  cancelAnimationFrame() {
+    window.cancelAnimationFrame(this.rafId);
+    this.rafId = null;
   }
 
 }

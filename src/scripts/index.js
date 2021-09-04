@@ -17,8 +17,6 @@ import ImageTools from "./ImageTools";
   const hsla = ColorTools.createHSLAColorObject();
   hsla.s = '45%'
   hsla.l = '50%'
-  // console.log(hsla)
-
 
   window.documentDot = new DocumentDot({
     canvas: canvas,
@@ -35,36 +33,18 @@ import ImageTools from "./ImageTools";
       callbackType: 'forever',
       delay: 0
     },
-    openingAnimation: false,
+    openingAnimation: true,
     dotConfig: {
-      // color:'red',
       color(_mode, _dot) {
-        // switch (_mode) {
-        //   case "fill":
-        return hsla.increasingColor(0.2);
-        //     return _dot.index % 2 !== 0 ? 'red' : 'block';
-        //   case "stroke":
-        //   return 'red';
-        // }
+        return Math.random() < 0.5 ?
+          hsla.getRelativelyColor() : hsla.increasingColor(0.2);
       },
-      // color:{
-      //   fill:'red',
-      //   stroke:'block'
-      // },
-      // color:{
-      //   fill(d){
-      //     return hsla.increasingColor();
-      //   },
-      //   stroke(d){
-      //     return hsla.getRelativelyColor();
-      //   },
-      // },
-      mode: 'fill-stroke',
+      ctxMode: 'fill-stroke',
       r: 3,
       cache: true,
       initDotMode: 'angle'
     }
-  }, {text: "❦", fontSize: 999});
+  }, '');
 
   let can = document.createElement('canvas');
   can.width = documentDot.canvas.width;
@@ -80,6 +60,6 @@ import ImageTools from "./ImageTools";
   }
   documentDot.animation();
 })();
-
+// 壁纸 ############################################################################################
 
 
