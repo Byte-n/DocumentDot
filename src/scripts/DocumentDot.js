@@ -9,13 +9,13 @@ class DocumentDot {
   /**
    *
    *param={
-   *      canvas:canvas,           canvas 对象 或者 css选择器
+   *      canvas:HTMLCanvasElement,           canvas
    *      callback = {
    *           //callback 会在interval结束后触发
    *          callback : function(DocumentDot) {
    *              //..code
    *          },
-   *          callbackType：'one',      one表示该回调函数在执行之后会被删除，'for ever' 代表每次都会执行
+   *          callbackType：'one',      one表示该回调函数在执行之后会被删除，'forever' 代表每次都会执行
    *          delay: 回调函数延时执行，单位ms
    *      },
    *      openingAnimation:false,      是否有开场动画
@@ -28,10 +28,11 @@ class DocumentDot {
    *          text:   string || {text:string,fontSize:number}    非法字符提示文本。
    *      },
    *      dotConfig: {          // 粒子设置
-   *        color: string || {fill:string,stroke:string},
-   *        mode: 'fill-stroke'|'stroke'|'fill',
-   *        r: number  粒子半径
-   *
+   *        color: string | function('stroke'|'fill',Dot):string | {fill: string | function(Dot):string,stroke: string | function(Dot):string }, 参数为function时，如果cache为false,则函数的Dot为undefined
+   *        mode: 'fill-stroke'|'stroke'|'fill'|'random',  random: cache为true时才有效，否则等效 'fill'
+   *        cache:boolean,
+   *        r: number  粒子半径,
+   *        initDotMode:('round'|'angle'|'random') 初始化点模式
    *        }
    *
    * }
@@ -41,7 +42,7 @@ class DocumentDot {
    *    callback: {
    *      delay: number, 
    *      callback: (function(DocumentDot):void), 
-   *      callbackType: ('one' | 'for ever')
+   *      callbackType: ('one' | 'forever')
    *    }, 
    *    openingAnimation?:boolean,
    *    marginX?:number,
@@ -52,12 +53,22 @@ class DocumentDot {
    *      text: string||{text:string,fontSize:number}
    *    },
    *    dotConfig: {
-   *      mode: string|| {fill:string,stroke:string},
+   *      mode: 'fill-stroke'|'stroke'|'fill'|'random',
    *      r: number, 
-   *      color: 'fill-stroke'|'stroke'|'fill'
+   *      color: string | function('stroke'|'fill',Dot):string | {fill: string | function(Dot):string,stroke: string | function(Dot):string },
+   *      cache:boolean,
+   *      initDotMode:('round'|'angle'|'random')
    *     }
    *    }}
-   * @param texts
+   * @param texts{
+   *  string
+   *  ||
+   *  {
+   *    text:string,
+   *    fontSize:number,
+   *    initDotMode:('round'|'angle'|'random')
+   *    }
+   *  }
    */
   constructor(param, ...texts) {
     this.enabled = true
@@ -68,9 +79,10 @@ class DocumentDot {
      * @type {boolean}
      */
     this.finished = true;
+
     /**
      * 文本数组
-     * @type {(string|{text:string,fontSize:number})[]}
+     * @type {(string|{text: string, fontSize: number, initDotMode: ("round"|""|"random")})[]}
      */
     this.textArray = [...texts];
     /**
@@ -105,7 +117,7 @@ class DocumentDot {
     this.callback = null;
     this.error = {enable: true, text: {text: 'ERROR！', fontSize: 222}};
     this.defaultError = {text: 'ERROR!', fontSize: 222};
-    this.dotConfig = {color: {fill: '#fff', stroke: '#fff'}, mode: 'fill', r: 2};
+
 
     param.callback && (this.callback = param.callback);
     this.openingAnimation = param.openingAnimation;
@@ -114,22 +126,62 @@ class DocumentDot {
     !isNaN(param.fontSize) && (this.fontSize = param.fontSize);
     Object.assign(this.error, param.error)
 
-    let dc = this.dotConfig.color;
+    /**
+     *  默认颜色值
+     * @type {{fill: function(Dot):string, stroke: function(Dot):string}}
+     */
+    let dc = {fill: () => '#fff', stroke: () => '#fff'};
+    let idm;
     if (param.dotConfig) {
-      switch (typeof param.dotConfig.color){
-        case "string":
-          dc.fill = param.dotConfig.color;
-          dc.stroke = param.dotConfig.color;
-          break;
-        case "object":
-          dc.fill = param.dotConfig.color.fill;
-          dc.stroke = param.dotConfig.color.stroke;
-          break;
+      idm = (typeof param.dotConfig.initDotMode === 'string') ? param.dotConfig.initDotMode : 'random';
+      // 将颜色转为一个固定格式的函数
+      if (param.dotConfig.color) {
+        switch (typeof param.dotConfig.color) {
+          case "string":
+            dc.stroke = dc.fill = (_d) => param.dotConfig.color
+            break;
+          case 'function':
+            dc.fill = (_d) => param.dotConfig.color('fill', _d);
+            dc.stroke = (_d) => param.dotConfig.color('stroke', _d);
+            break;
+          case "object":
+            switch (typeof param.dotConfig.color.fill) {
+              case "string":
+                dc.fill = () => param.dotConfig.color.fill;
+                break;
+              case "function":
+                dc.fill = param.dotConfig.color.fill
+                break;
+            }
+            switch (typeof param.dotConfig.color.stroke) {
+              case "string":
+                dc.stroke = () => param.dotConfig.color.stroke;
+                break;
+              case "function":
+                dc.stroke = param.dotConfig.color.stroke
+                break;
+            }
+            break;
+        }
       }
     }
-    Object.assign(this.dotConfig, param.dotConfig)
-    this.dotConfig.color = dc;
-
+    /**
+     *  粒子配置
+     * @type {{
+     * mode: ('fill-stroke'|'stroke'|'fill'|'random'),
+     * r: number,
+     * cache: boolean,
+     * color: {fill: function(Dot):string, stroke: function(Dot):string},
+     * initDotMode:('round'|'angle'|'random')
+     * }}
+     */
+    this.dotConfig = {
+      color: dc,
+      mode: param.dotConfig.mode || 'fill',
+      r: param.dotConfig.r || 2,
+      cache: param.dotConfig.cache,
+      initDotMode: idm
+    };
 
     this._resetCanvas();
     this.openingAnimation === true && this._openingAnimation();
@@ -145,22 +197,34 @@ class DocumentDot {
       new Dot({
         initDot: {x: 0, y: 0},
         radius: this.dotConfig.r,
-        targetDot: {x: 0, y: 0}
+        targetDot: {x: 0, y: 0},
+        color: this.dotConfig.color,
+        ctxMode: this.dotConfig.mode,
+        cache: this.dotConfig.cache
       }),
       new Dot({
         initDot: {x: window.innerWidth, y: 0},
         radius: this.dotConfig.r,
-        targetDot: {x: 0, y: 0}
+        targetDot: {x: 0, y: 0},
+        color: this.dotConfig.color,
+        ctxMode: this.dotConfig.mode,
+        cache: this.dotConfig.cache
       }),
       new Dot({
         initDot: {x: window.innerWidth, y: window.innerHeight},
         radius: this.dotConfig.r,
-        targetDot: {x: 0, y: 0}
+        targetDot: {x: 0, y: 0},
+        color: this.dotConfig.color,
+        ctxMode: this.dotConfig.mode,
+        cache: this.dotConfig.cache
       }),
       new Dot({
         initDot: {x: 0, y: window.innerHeight},
         radius: this.dotConfig.r,
-        targetDot: {x: 0, y: 0}
+        targetDot: {x: 0, y: 0},
+        color: this.dotConfig.color,
+        ctxMode: this.dotConfig.mode,
+        cache: this.dotConfig.cache
       })
     ]
     this.fontSize = 99;
@@ -202,7 +266,15 @@ class DocumentDot {
 
   /**
    * 添加一个文本到队列中，如果队列为空，则会自动开始动画
-   * @param texts
+   * @param texts{
+   *  string
+   *  ||
+   *  {
+   *    text:string,
+   *    fontSize:number,
+   *    initDotMode:('round'|'angle'|'random')
+   *    }
+   *  }
    */
   emitDot(...texts) {
     if (texts.length === 0) {
@@ -222,27 +294,36 @@ class DocumentDot {
    * 默认文本：'NULL'
    *
    *  如果fontSize过大，就会自动效准
-   * @param param {string || function || {text:string,fontSize:number}}
+   *  initDotMode：初始化点模式
+   * @param param {
+   *  string
+   *  ||
+   *  {
+   *    text:string,
+   *    fontSize:number,
+   *    initDotMode:('round'|'angle'|'random')
+   *    }
+   * }
    * @private
    */
   _emitDot(param) {
-    /**
-     *
-     * @type {string || function || {text:string,fontSize:number}}
-     */
     let text = '';
     let fontSize_ = this.fontSize;
+    let initDotMode = this.dotConfig.initDotMode
 
-    if (typeof param === 'object') {
-      text = param.text;
-      if (!isNaN(param.fontSize)) {
-        fontSize_ = param.fontSize
-      }
-    } else if (typeof param === 'string') {
-      text = param;
-    } else if (typeof param === 'function') {
-      text = param();
+    switch (typeof param) {
+      case "object":
+        text = param.text;
+        if (!isNaN(param.fontSize)) {
+          fontSize_ = param.fontSize
+        }
+        initDotMode = param.initDotMode || 'random'
+        break;
+      case "string":
+        text = param;
+        break;
     }
+
     text.trim();
     if (text.length === 0) {
       return;
@@ -281,7 +362,7 @@ class DocumentDot {
     this.historyDot = this.dotList;
     this.dotList = [];
 
-    this._analyzeCanvas();
+    this._analyzeCanvas(initDotMode);
 
     //初始化失败
     if (this.dotList.length === 0) {
@@ -348,21 +429,29 @@ class DocumentDot {
     }
     this._data();
 
-    this._resetCanvas();
-
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.beginPath();
-    // this.ctx.fillText(text, this.canvas.width / 2 - this.ctx.measureText(text).width / 2, h);
-
     let d, pos;
+    if (this.dotConfig.cache) {
+      for (let i = 0; i < this.dots.length; i++) {
+        d = this.dots[i]
+        pos = d.currentDot;
+        if (d.cahce) {
+          this.ctx.drawImage(d.canvas, pos.x, pos.y);
+        }
+      }
+      this.rafId = window.requestAnimationFrame(this._draw.bind(this, text, h));
+      return;
+    }
 
+    this.ctx.strokeStyle = this.dotConfig.color.stroke(undefined);
+    this.ctx.fillStyle = this.dotConfig.color.fill(undefined);
+    this.ctx.beginPath();
     for (let i = 0; i < this.dots.length; i++) {
       d = this.dots[i]
       pos = d.currentDot;
       this.ctx.moveTo(pos.x + this.dotConfig.r, pos.y)
       this.ctx.arc(pos.x, pos.y, d.radius, 0, 2 * Math.PI);
     }
-
     this.ctx.closePath();
     switch (this.dotConfig.mode) {
       case "fill":
@@ -375,6 +464,7 @@ class DocumentDot {
         this.ctx.fill();
         this.ctx.stroke();
         break;
+      case 'random':
       default:
         this.ctx.fill();
     }
@@ -393,8 +483,6 @@ class DocumentDot {
 
   _resetCanvas() {
     this.ctx.textBaseline = "top";
-    this.ctx.strokeStyle = this.dotConfig.color.stroke ;
-    this.ctx.fillStyle = this.dotConfig.color.fill;
   }
 
   _isNumber(n) {
@@ -405,16 +493,36 @@ class DocumentDot {
    *
    * @private
    */
-  _analyzeCanvas() {
-    let m = Math.random() < 0.5 ? 'round' : '';
+  /**
+   *
+   * @param initDotMode{'round'|'angle'|'random'}
+   * @private
+   */
+  _analyzeCanvas(initDotMode = "random") {
+    let m = initDotMode === 'random' ? (Math.random() < 0.5 ? 'round' : 'angle') : initDotMode;
+    let im = function () {
+      return this.dotConfig.mode === 'random' ? (Math.random() < 0.5 ? 'fill' : 'stroke') : this.dotConfig.mode
+    }.bind(this);
     let imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
     let r = this.dotConfig.r;
     let boundary = {w: this.canvas.width, h: this.canvas.height};
+    let index = 0;
     for (let x = 0; x < imgData.width; x += ((r * 2) + 2)) {
       for (let y = 0; y < imgData.height; y += ((r * 2) + 2)) {
         let i = (y * imgData.width + x) * 4;
         if (imgData.data[i + 3] === 255) {
-          this.dotList.push(this.createDot({x, y}, r, m, boundary))
+          this.dotList.push(
+            this.createDot({
+              targetDot: {x, y},
+              cache: this.dotConfig.cache,
+              radius: r,
+              initDotMode: m,
+              boundary: boundary,
+              color: this.dotConfig.color,
+              ctxMode: im(),
+              index: index++
+            })
+          )
         }
       }
     }
@@ -436,23 +544,55 @@ class DocumentDot {
 
   /**
    * 创建粒子
-   * @param targetDot{{x:number,y:number}}
-   * @param radius{number}
-   * @param initDotMode{'round'|string}
-   * @param boundary{{w:number,h:number}}
+   * @param config{{
+   *   initDot?: {
+   *     x: number,
+   *     y: number
+   *   },
+   *   targetDot: {
+   *     x: number,
+   *     y: number
+   *   },
+   *   cache?: boolean,
+   *   radius?: number,
+   *   initDotMode?: 'round' | 'angle',
+   *   boundary?: {w:number,h:number},
+   *   delay?: number,
+   *   color?:{fill: function(Dot):string, stroke: function(Dot):string},
+   *   ctxMode?:('fill'|'fill-stroke'|'stroke'),
+   *   index: number
+   * }}
    * @return {Dot}
    */
-  createDot(targetDot, radius, initDotMode, boundary) {
-    let dot = this.historyDot.pop();
-    if (dot) {
-      dot.setNewTargetDot(targetDot);
+  createDot(config) {
+    let dot = this.historyDot.shift();
+    if (dot) {// 回用历史粒子
+      dot.set({
+        initDot: config.initDot,
+        targetDot: config.targetDot,
+        initDotMode: config.initDotMode,
+        boundary: config.boundary,
+        delay: config.delay,
+        index: config.index,
+        // 不能触发缓存重绘，重绘的话，视觉上像所有粒子位置瞬间打乱了。
+        // cache: config.cache,
+        // radius: config.radius,
+        // color: config.color,
+        // ctxMode: config.ctxMode
+      })
       return dot;
     } else {
       return new Dot({
-        targetDot,
-        radius,
-        initDotMode,
-        boundary
+        initDot: config.initDot,
+        targetDot: config.targetDot,
+        radius: config.radius,
+        initDotMode: config.initDotMode,
+        boundary: config.boundary,
+        delay: config.delay,
+        color: config.color,
+        ctxMode: config.ctxMode,
+        cache: config.cache,
+        index: config.index
       })
     }
   }
@@ -473,7 +613,7 @@ class DocumentDot {
 
 class Dot {
   /**
-   *
+   *  ctxMode: random 指的是随机 'fill' 和 'stroke'
    * @param config{{
    *   initDot?: {
    *     x: number,
@@ -483,10 +623,14 @@ class Dot {
    *     x: number,
    *     y: number
    *   },
-   *   radius: number,
+   *   cache:boolean,
+   *   radius?: number,
    *   initDotMode?: 'round' | string,
    *   boundary?: {w:number,h:number},
-   *   delay?: number
+   *   delay?: number,
+   *   color?:{fill: function(Dot):string, stroke: function(Dot):string},
+   *   ctxMode?:('fill'|'fill-stroke'|'stroke'),
+   *   index?:number
    * }}
    */
   constructor(config) {
@@ -542,6 +686,141 @@ class Dot {
      * @type {boolean}
      */
     this.finishdRemove = false;
+
+    /**
+     * 序号
+     * @type {number}
+     */
+    this.index = config.index
+    /**
+     * 颜色
+     * @type {{fill: function(Dot):string, stroke: function(Dot):string}}
+     */
+    this.color = config.color || {
+      fill: '#Fff',
+      stroke: '#fff'
+    }
+    /**
+     * 绘制模式
+     * @type {'fill'|'fill-stroke'|'stroke'}
+     */
+    this.ctxMode = 'fill';
+    this.setCtxMode(config.ctxMode)
+    /**
+     * 缓存
+     * @type {boolean}
+     */
+    this.cahce = config.cache;
+
+    if (!this.cahce) {
+      return;
+    }
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = this.radius * 2;
+    this.canvas.height = this.radius * 2;
+    this.ctx = this.canvas.getContext('2d');
+    this.refreshCache();
+  }
+
+  /**
+   *
+   * @param mode{'fill'|'fill-stroke'|'stroke'}
+   */
+  setCtxMode(mode) {
+    if (!mode) {
+      return;
+    }
+    // if (mode === 'random') {
+    //   mode = Math.random() < 0.5 ? 'fill' : 'stroke'
+    // }
+    this.ctxMode = mode;
+  }
+
+  /**
+   * @param config{{
+   *   initDot?: {
+   *     x: number,
+   *     y: number
+   *   },
+   *   targetDot: {
+   *     x: number,
+   *     y: number
+   *   },
+   *   cache?:boolean,
+   *   radius?: number,
+   *   initDotMode?: 'round' | 'angle',
+   *   boundary?: {w:number,h:number},
+   *   delay?: number,
+   *   color?:{fill: function(Dot):string, stroke: function(Dot):string},
+   *   ctxMode?:('fill'|'fill-stroke'|'stroke'),
+   *   index:number
+   * }}
+   */
+  set(config) {
+    let refreshCache = false;
+    if (config.initDot) {
+      this.initDot = config.initDot;
+    } else if (config.initDotMode && config.boundary) {
+      this.setInitDot(config.initDotMode, config.boundary);
+    }
+    if (config.targetDot) {
+      this.setNewTargetDot(config.targetDot);
+    }
+    if (config.delay) {
+      this.delay = config.delay;
+      this.delayCount = 0;
+    }
+    if (config.index) {
+      this.index = config.index;
+    }
+    if (config.cache) {
+      this.cahce = config.cache;
+      refreshCache = true;
+    }
+    if (config.radius && config.radius !== this.radius) {
+      this.radius = config.radius;
+      refreshCache = true;
+    }
+    if (
+      config.color
+      &&
+      (this.color.fill !== config.color.fill || this.color.stroke !== config.color.stroke)
+    ) {
+      this.color = config.color;
+      refreshCache = true;
+    }
+    if (config.ctxMode && config.ctxMode !== this.ctxMode) {
+      this.setCtxMode(config.ctxMode);
+      refreshCache = true;
+    }
+    refreshCache && this.refreshCache();
+  }
+
+  refreshCache() {
+    if (!this.cahce) {
+      return;
+    }
+    this.ctx.fillStyle = this.color.fill(this);
+    this.ctx.strokeStyle = this.color.stroke(this);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.beginPath();
+    this.ctx.arc(this.radius, this.radius, this.radius - 0.5, 0, Math.PI * 2);
+    this.ctx.closePath();
+    switch (this.ctxMode) {
+      case "fill":
+        this.ctx.fill();
+        break;
+      case 'stroke':
+        this.ctx.stroke();
+        break;
+      case 'fill-stroke':
+        this.ctx.fill();
+        this.ctx.stroke();
+        break;
+      default:
+        this.ctx.fill();
+    }
+    this.ctx.save();
   }
 
   /**
@@ -550,20 +829,25 @@ class Dot {
    */
   clone() {
     let d = new Dot({
-      targetDot: {x: 0, y: 0},
-      radius: 2,
-      initDotMode: '',
-      boundary: {w: 100, h: 100}
+      initDot: this.initDot,
+      targetDot: this.targetDot,
+      radius: this.radius,
+      cache: true,
+      color: this.color
     });
-    d.radius = this.radius;
-    Object.assign(d.initDot, this.initDot)
-    Object.assign(d.targetDot, this.targetDot)
     Object.assign(d.currentDot, this.currentDot)
     d.delay = this.delay;
-    d.currentDot = this.currentDot;
+    d.delayCount = this.delayCount;
     d.p = this.p;
     d.finishd = this.finishd;
     d.finishdRemove = this.finishdRemove;
+
+    d.color.fill = this.color.fill;
+    d.color.stroke = this.color.stroke;
+    d.ctxMode = this.ctxMode;
+    d.cahce = this.cahce;
+    d.index = this.index;
+    d.refreshCache();
     return d;
   }
 
@@ -579,36 +863,43 @@ class Dot {
     this.delayCount = 0;
   }
 
-
   /**
    * 设置初始点位置
-   * @param mode{{'round' | string}}
+   * @param mode{'round' | 'angle'}
    * @param boundary{{w:number,h:number}}
    */
   setInitDot(mode, boundary) {
     let w = boundary.w;
     let h = boundary.h;
     //随机四个角
-    if (mode !== 'round') {
-      this.initDot = {
-        x: Math.random() > 0.5 ? w + (this.radius * 2) : -(this.radius * 2),
-        y: Math.random() > 0.5 ? h + (this.radius * 2) : -(this.radius * 2)
-      };
-    } else {
-      //四周
-      if (Math.random() > 0.5) {
+    switch (mode) {
+      case "round":
+        //四周
+        if (Math.random() > 0.5) {
+          this.initDot = {
+            x: Math.random() > 0.5 ? w + (this.radius * 2) : -(this.radius * 2),
+            y: Math.random() * h
+          };
+        } else {
+          this.initDot = {
+            x: Math.random() * w,
+            y: Math.random() > 0.5 ? h + (this.radius * 2) : -(this.radius * 2)
+          };
+        }
+        break;
+      case "angle":
         this.initDot = {
           x: Math.random() > 0.5 ? w + (this.radius * 2) : -(this.radius * 2),
-          y: Math.random() * h
-        };
-      } else {
-        this.initDot = {
-          x: Math.random() * w,
           y: Math.random() > 0.5 ? h + (this.radius * 2) : -(this.radius * 2)
         };
-      }
+        break;
+      default:
+        this.initDot = {
+          x: 0,
+          y: 0
+        }
+        break;
     }
-
   }
 
   /**
