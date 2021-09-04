@@ -1,5 +1,5 @@
 import DocumentDot from "./DocumentDot";
-import ColorTools from "./ColorTools";
+// import ColorTools from "./ColorTools";
 import ImageTools from "./ImageTools";
 
 
@@ -14,9 +14,9 @@ import ImageTools from "./ImageTools";
 
   document.body.append(canvas)
 
-  const hsla = ColorTools.createHSLAColorObject();
-  hsla.s = '45%'
-  hsla.l = '50%'
+  // const hsla = ColorTools.createHSLAColorObject();
+  // hsla.s = '45%'
+  // hsla.l = '50%'
 
   window.documentDot = new DocumentDot({
     canvas: canvas,
@@ -49,11 +49,11 @@ import ImageTools from "./ImageTools";
       //   //   hsla.getRelativelyColor() : hsla.increasingColor(0.2);
       // },
       ctxMode: 'fill-stroke',
-      r: 3,
+      r: 2,
       cache: true,
       initDotMode: 'angle'
     }
-  }, 'a','a');
+  },  {text: "❤", fontSize: 9999});
 
   let can = document.createElement('canvas');
   can.width = documentDot.canvas.width;

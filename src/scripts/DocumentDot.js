@@ -514,7 +514,6 @@ class DocumentDot {
    * @private
    */
   _draw() {
-    console.log(1)
     this._data();
     if (this.finished) {
       this.cancelAnimationFrame();
@@ -589,8 +588,9 @@ class DocumentDot {
     let index = typeof config.index === 'number' ? config.index : 0;
     let color = config.color;
     let dos = [];
-    for (let x = 0; x < imageData.width; x += ((r * 2) + 2)) {
-      for (let y = 0; y < imageData.height; y += ((r * 2) + 2)) {
+    let __ = r < 2 ? r : 2;
+    for (let x = 0; x < imageData.width; x += ((r * 2) + __)) {
+      for (let y = 0; y < imageData.height; y += ((r * 2) + __)) {
         let i = (y * imageData.width + x) * 4;
         if (imageData.data[i + 3] === 255) {
           dos.push(
@@ -616,7 +616,7 @@ class DocumentDot {
       let d, d2;
       let l = dos.length;
       while (this.historyDot.length !== 0) {
-        d2 = this.historyDot.splice(~~(this.historyDot.length*Math.random()),1)[0];
+        d2 = this.historyDot.splice(~~(this.historyDot.length * Math.random()), 1)[0];
         d = dos[~~(l * Math.random())].clone();
         d2.finishdRemove = true;
         d2.setNewTargetDot(d.targetDot);
@@ -649,7 +649,7 @@ class DocumentDot {
    * @return {Dot}
    */
   createDot(config) {
-    let dot = this.historyDot.splice(~~(this.historyDot.length*Math.random()),1)[0];
+    let dot = this.historyDot.splice(~~(this.historyDot.length * Math.random()), 1)[0];
     if (dot) {// 回用历史粒子
       dot.set({
         initDot: config.initDot,
