@@ -1,5 +1,5 @@
 import DocumentDot from "./DocumentDot";
-// import ColorTools from "./ColorTools";
+import ColorTools from "./ColorTools";
 import ImageTools from "./ImageTools";
 
 
@@ -14,9 +14,9 @@ import ImageTools from "./ImageTools";
 
   document.body.append(canvas)
 
-  // const hsla = ColorTools.createHSLAColorObject();
-  // hsla.s = '45%'
-  // hsla.l = '50%'
+  const hsla = ColorTools.createHSLAColorObject();
+  hsla.s = '45%'
+  hsla.l = '50%'
 
   window.documentDot = new DocumentDot({
     canvas: canvas,
@@ -25,7 +25,12 @@ import ImageTools from "./ImageTools";
     callback: {
       callback(_d) {
         if (imageData) {
-          documentDot.emitDot({imageData, r: 2}, {text: "❤", fontSize: 9999})
+          documentDot.emitDot({
+            imageData,
+            ctxMode: 'stroke',
+            color: {fill: () => 'red', stroke: () => 'red'},
+            initDotMode: 'round'
+          }, {text: "❤", fontSize: 9999, initDotMode: 'angle'})
           return
         }
         documentDot.emitDot("1.", "2..", "3...", "文档粒子")
@@ -35,9 +40,9 @@ import ImageTools from "./ImageTools";
     },
     openingAnimation: true,
     dotConfig: {
-      color:{
-        fill:'#fff',
-        stroke:'#e7e7e7'
+      color: {
+        fill: '#fff',
+        stroke: '#e7e7e7'
       },
       // color(_mode, _dot) {
       //   if (hsla.speed > 50) {
@@ -49,11 +54,11 @@ import ImageTools from "./ImageTools";
       //   //   hsla.getRelativelyColor() : hsla.increasingColor(0.2);
       // },
       ctxMode: 'fill-stroke',
-      r: 2,
-      cache: true,
+      r: 3,
+      cache: false,
       initDotMode: 'angle'
     }
-  },  {text: "❤", fontSize: 9999});
+  }, {text: "❤", fontSize: 9999});
 
   let can = document.createElement('canvas');
   can.width = documentDot.canvas.width;
@@ -66,6 +71,9 @@ import ImageTools from "./ImageTools";
     let c = ImageTools.contain({width: image.width, height: image.height}, {width: can.width, height: can.height});
     ctx.drawImage(image, c.dx, c.dy, c.dw, c.dh)
     imageData = ctx.getImageData(0, 0, can.width, can.height);
+  }
+  image.onerror = function () {
+    console.error('无法加载图片：', image.src)
   }
   documentDot.animation();
 })();

@@ -6,6 +6,7 @@
 import Easing from "./Easing";
 
 class DocumentDot {
+
   /**
    *  无法绘制的情况下，会直接跳过。
    *  以下情况无法绘制：字符集不支持，以及画板上内容无效。
@@ -54,20 +55,8 @@ class DocumentDot {
    *    }}
    * @param texts{
    *    string
-   *   ||
-   *   {
-   *    text: string,
-   *    fontSize?: number,
-   *    initDotMode?: ('round'|'angle'|'random')
-   *   }
-   *   ||
-   *   {
-   *    imageData: ImageData,
-   *    initDotMode?: 'random'|'round'|'angle',
-   *    ctxMode?: 'fill'|'fill-stroke'|'stroke'|'random',
-   *    r?: number,
-   *    color?: {fill: (function(Dot): string), stroke: (function(Dot): string)}
-   *   }
+   *   ||{text: string, fontSize?: number, initDotMode?: ('round'|'angle'|'random')}
+   *   ||{imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
    *  }
    */
   constructor(param, ...texts) {
@@ -86,13 +75,7 @@ class DocumentDot {
      * (
      *  string||
      *  {text: string, fontSize?: number, initDotMode?: ("round"|""|"random")}||
-     *  {
-     *   imageData: ImageData,
-     *   initDotMode?: 'random'|'round'|'angle',
-     *   ctxMode?: 'fill'|'fill-stroke'|'stroke'|'random',
-     *   r?: number,
-     *   color?: {fill: (function(Dot): string), stroke: (function(Dot): string)}
-     * }
+     *  {imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
      *  )[]}
      */
     this.textArray = [...texts];
@@ -113,12 +96,14 @@ class DocumentDot {
     this.historyDot = [];
 
     this.canvas = param.canvas;
-    this.tempCanvas = document.createElement('canvas');
-    this.tempCanvas.width = this.canvas.width;
-    this.tempCanvas.height = this.canvas.height;
+    this.textCanvas = document.createElement('canvas');
+    this.imageCanvas = document.createElement('canvas');
+    this.imageCanvas.width = this.textCanvas.width = this.canvas.width;
+    this.imageCanvas.height = this.textCanvas.height = this.canvas.height;
     this.ctx = this.canvas.getContext('2d');
-    this.tempCtx = this.tempCanvas.getContext('2d');
-    this.tempCtx.textBaseline = "top";
+    this.textCtx = this.textCanvas.getContext('2d');
+    this.textCtx.textBaseline = "top";
+    this.imageCtx = this.imageCanvas.getContext('2d');
 
     this.rafId = null;
 
@@ -197,6 +182,208 @@ class DocumentDot {
   }
 
   /**
+   * 开始动画
+   */
+  animation() {
+    if (typeof this.interval === "number") {
+      return;
+    }
+    let self = this;
+    let d, fsi;
+    this.interval = setInterval(function () {
+      if (self.textArray.length === 0) {
+        //等待完成
+        if (!self.finished) {
+          return;
+        }
+
+        clearInterval(self.interval);
+        self.interval = null;
+
+        // 没有回调函数
+        if (!self.callback.callback instanceof Function) {
+          self.callback = null;
+          self.stop();
+          return;
+        }
+        // 有回调函数
+        setTimeout(function () {
+          self.stop();
+          // 执行回调函数
+          self.callback.callback(self);
+          // 是否移除回调函数
+          if (self.callback.callbackType === 'one') {
+            self.callback = null;
+          }
+        }, self.callback.delay ? self.callback.delay : 0);
+      }
+      if (self.finished === true) {
+        d = self.textArray.shift();
+        // 不同种类的调用不同的方法处理
+        d && self._emit(d);
+        if (self.rafId === null) {
+          self.start();
+        }
+      }
+    }, 10);
+  }
+
+  /**
+   * 添加一个文本到队列中，如果队列为空，则会自动开始动画
+   * @param texts{ string
+   *  || {text: string, fontSize?: number, initDotMode?: ('round'|'angle'|'random')}
+   *  || {imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
+   *  }
+   */
+  emitDot(...texts) {
+    if (texts.length === 0) {
+      return;
+    }
+    for (let i = 0; i < texts.length; i++) {
+      if (texts[i].length === 0) return false;
+      this.textArray.push(texts[i]);
+    }
+    !this.interval && this.animation();
+  }
+
+  /**
+   *
+   * @param config{ string
+   *  || {text: string, fontSize?: number, initDotMode?: ('round'|'angle'|'random')}
+   *  || {imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
+   *  }
+   * @private
+   */
+  _emit(config) {
+    this.historyDot = this.dotList;
+    let ds;
+    switch (typeof config) {
+      case "object":
+        if (config.imageData instanceof ImageData) {
+          ds = this._emitImageData(config)
+        } else if ([undefined, null, ''].indexOf(config.text) === -1) {
+          ds = this._emitText(config);
+        }
+        break;
+      case "string":
+        ds = this._emitText(config);
+        break;
+      default:
+        ds = []
+        break;
+    }
+    if (ds.length === 0) {
+      this.dotList = this.historyDot;
+      console.error('无法绘制：', config);
+      this.finished = true;
+    } else {
+      this.dotList = ds;
+      this.finished = false;
+    }
+  }
+
+  /**
+   * 无论时哪一种途径获取的文本。都支持两行，用'\n'分割
+   * 默认文本：''
+   *
+   * @param param { string || {text:string,  fontSize?: number, initDotMode: ('round'|'angle'|'random') }}
+   * @return {Dot[]}
+   * @private
+   */
+  _emitText(param) {
+    let text = '';
+    let fontSize_ = this.fontSize;
+    let initDotMode = this.dotConfig.initDotMode
+
+    switch (typeof param) {
+      case "object":
+        text = param.text;
+        if (!isNaN(param.fontSize)) {
+          fontSize_ = param.fontSize
+        }
+        initDotMode = param.initDotMode || 'random'
+        break;
+      case "string":
+        text = param;
+        break;
+    }
+
+    text.trim();
+    if (text.length === 0) {
+      return [];
+    }
+
+    //  支持两行，用 '\n' 分割
+    let strings = text.split('\n');
+    let length = strings.length > 1 ? 2 : 1;
+
+    this.textCtx.clearRect(0, 0, this.textCanvas.width, this.textCanvas.height);
+    this.textCtx.fillStyle = "#000000";
+
+    let h;
+    for (let i = 0; i < length; i++) {
+      text = strings[i];
+      //字体大小优化
+      this.textCtx.font = fontSize_ + 'px ' + this.fontFamily;
+      fontSize_ = Math.min(
+        fontSize_,
+        ((this.textCanvas.width - this.marginX) / this.textCtx.measureText(text).width) * fontSize_,
+        ((this.textCanvas.height - this.marginY) / fontSize_) * (this._isNumber(text) ? 1 : 0.5) * fontSize_
+      );
+      this.textCtx.font = fontSize_ + 'px ' + this.fontFamily;
+
+      if (length === 2) {
+        h = this.textCanvas.height / 2 - (fontSize_ * (1 - i));
+      } else {
+        h = this.textCanvas.height / 2 - (fontSize_ / 2);
+      }
+      this.textCtx.fillText(text, this.textCanvas.width / 2 - this.textCtx.measureText(text).width / 2, h);
+    }
+
+    return this._analyzeCanvas({
+      imageData: this.textCtx.getImageData(0, 0, this.textCanvas.width, this.textCanvas.height),
+      initDotMode,
+      ctxMode: this.dotConfig.ctxMode,
+      r: this.dotConfig.r,
+      boundary: {w: this.canvas.width, h: this.canvas.height},
+      cache: this.dotConfig.cache,
+      color: this.dotConfig["color"]
+    });
+  }
+
+  /**
+   * @param config{{imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}}
+   * @return {Dot[]}
+   * @private
+   */
+  _emitImageData(config) {
+    let imageData = config.imageData;
+    if (!(imageData instanceof ImageData)) {
+      return [];
+    }
+    let initDotMode = config.initDotMode || this.dotConfig.initDotMode;
+    let ctxMode = this.dotConfig.ctxMode;
+    let r = this.dotConfig.r;
+    let boundary = {w: config.imageData.width, h: config.imageData.height} || {
+      w: this.canvas.width,
+      h: this.canvas.height
+    };
+    let cache = this.dotConfig.cache;
+    let color = this.dotConfig.color;
+    let index = 0;
+
+    return this._analyzeCanvas({
+      imageData,
+      initDotMode,
+      ctxMode,
+      r,
+      boundary,
+      cache,
+      color, index
+    });
+  }
+
+  /**
    * 开场动画
    * @private
    */
@@ -239,251 +426,10 @@ class DocumentDot {
   }
 
   /**
-   * 开始动画
-   */
-  animation() {
-    if (typeof this.interval === "number") {
-      return;
-    }
-    let self = this;
-    let d;
-    this.interval = setInterval(function () {
-      if (self.textArray.length === 0) {
-        //等待完成
-        if (!self.finished) {
-          return;
-        }
-
-        clearInterval(self.interval);
-        self.interval = null;
-
-        // 没有回调函数
-        if (!self.callback.callback instanceof Function) {
-          self.callback = null;
-          self.stop();
-          return;
-        }
-        // 有回调函数
-        setTimeout(function () {
-          self.stop();
-          // 执行回调函数
-          self.callback.callback(self);
-          // 是否移除回调函数
-          if (self.callback.callbackType === 'one') {
-            self.callback = null;
-          }
-        }, self.callback.delay ? self.callback.delay : 0);
-      }
-      if (self.finished === true) {
-        d = self.textArray.shift();
-        // 不同种类的调用不同的方法处理
-        switch (typeof d) {
-          case "object":
-            if (d.imageData instanceof ImageData) {
-              self._emitDot_imageData(d)
-            } else if ([undefined, null, ''].indexOf(d.text) === -1) {
-              self._emitDot(d);
-            }
-            break;
-          case "string":
-            self._emitDot(d);
-            break;
-        }
-      }
-    }, 10);
-  }
-
-  /**
-   * 添加一个文本到队列中，如果队列为空，则会自动开始动画
-   * @param texts{
-   *  string
-   *  ||
-   *  {
-   *    text: string,
-   *    fontSize?: number,
-   *    initDotMode?: ('round'|'angle'|'random')
-   *    }
-   *  ||
-   *  {
-   *   imageData: ImageData,
-   *   initDotMode?: 'random'|'round'|'angle',
-   *   ctxMode?: 'fill'|'fill-stroke'|'stroke'|'random',
-   *   r?: number,
-   *   color?: {fill: (function(Dot): string), stroke: (function(Dot): string)}
-   *  }
-   *  }
-   */
-  emitDot(...texts) {
-    if (texts.length === 0) {
-      return;
-    }
-    for (let i = 0; i < texts.length; i++) {
-      if (texts[i].length === 0) return false;
-      this.textArray.push(texts[i]);
-    }
-    !this.interval && this.animation();
-  }
-
-  /**
-   * param如果是函数，则应该返回一个字符串，并且该函数没有参数。
-   * 无论时哪一种途径获取的文本。都支持两行，用'\n'分割
-   * 默认文本：'NULL'
-   *
-   *  如果fontSize过大，就会自动效准
-   *  initDotMode：初始化点模式
-   * @param param {
-   *  string
-   *  ||
-   *  {
-   *    text:string,
-   *    fontSize?: number,
-   *    initDotMode: ('round'|'angle'|'random')
-   *   }
-   *   ||
-   *   {
-   *   imageData: ImageData,
-   *   initDotMode?: 'random'|'round'|'angle',
-   *   ctxMode?: 'fill'|'fill-stroke'|'stroke'|'random',
-   *   r?: number,
-   *   color?: {fill: (function(Dot): string), stroke: (function(Dot): string)}
-   * }
-   * }
-   * @private
-   */
-  _emitDot(param) {
-    let text = '';
-    let fontSize_ = this.fontSize;
-    let initDotMode = this.dotConfig.initDotMode
-
-    switch (typeof param) {
-      case "object":
-        text = param.text;
-        if (!isNaN(param.fontSize)) {
-          fontSize_ = param.fontSize
-        }
-        initDotMode = param.initDotMode || 'random'
-        break;
-      case "string":
-        text = param;
-        break;
-    }
-
-    text.trim();
-    if (text.length === 0) {
-      return;
-    }
-
-    //  支持两行，用 '\n' 分割
-    let strings = text.split('\n');
-    let length = strings.length > 1 ? 2 : 1;
-
-    this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
-    this.tempCtx.fillStyle = "#000000";
-
-    let h;
-    for (let i = 0; i < length; i++) {
-      text = strings[i];
-      //字体大小优化
-      this.tempCtx.font = fontSize_ + 'px ' + this.fontFamily;
-      fontSize_ = Math.min(
-        fontSize_,
-        ((this.tempCanvas.width - this.marginX) / this.tempCtx.measureText(text).width) * fontSize_,
-        ((this.tempCanvas.height - this.marginY) / fontSize_) * (this._isNumber(text) ? 1 : 0.5) * fontSize_
-      );
-      this.tempCtx.font = fontSize_ + 'px ' + this.fontFamily;
-
-      if (length === 2) {
-        h = this.tempCanvas.height / 2 - (fontSize_ * (1 - i));
-      } else {
-        h = this.tempCanvas.height / 2 - (fontSize_ / 2);
-      }
-      this.tempCtx.fillText(text, this.tempCanvas.width / 2 - this.tempCtx.measureText(text).width / 2, h);
-    }
-
-
-    this.historyDot = this.dotList;
-
-    this.dotList = this._analyzeCanvas({
-      imageData: this.tempCtx.getImageData(0, 0, this.tempCanvas.width, this.tempCanvas.height),
-      initDotMode,
-      ctxMode: this.dotConfig.ctxMode,
-      r: this.dotConfig.r,
-      boundary: {w: this.canvas.width, h: this.canvas.height},
-      cache: this.dotConfig.cache,
-      color: this.dotConfig["color"]
-    });
-
-    //初始化失败
-    if (this.dotList.length === 0) {
-      //重置，不然dotList就是空数组
-      this.dotList = this.historyDot;
-      this.finished = true;
-      console.error('无法绘制：', text);
-      return;
-    }
-    this.finished = false;
-    if (this.rafId === null) {
-      this.start();
-    }
-  }
-
-  /**
-   * @param config{{
-   *   imageData:ImageData,
-   *   initDotMode?:'random'|'round'|'angle',
-   *   ctxMode?: 'fill'|'fill-stroke'|'stroke'|'random',
-   *   r?: number,
-   *   color?:  {fill: (function(Dot): string), stroke: (function(Dot): string)}
-   * }}
-   * @private
-   */
-  _emitDot_imageData(config) {
-    let imageData = config.imageData;
-    if (!(imageData instanceof ImageData)) {
-      return;
-    }
-    let initDotMode = config.initDotMode || this.dotConfig.initDotMode;
-    let ctxMode = config.ctxMode || this.dotConfig.ctxMode;
-    let r = config.r || this.dotConfig.r;
-    let boundary = {w: config.imageData.width, h: config.imageData.height} || {
-      w: this.canvas.width,
-      h: this.canvas.height
-    };
-    let cache = this.dotConfig.cache;
-    let color = config.color || this.dotConfig.color;
-    let index = 0;
-
-    this.historyDot = this.dotList;
-    this.dotList = this._analyzeCanvas({
-      imageData,
-      initDotMode,
-      ctxMode,
-      r,
-      boundary,
-      cache,
-      color, index
-    });
-
-    //初始化失败
-    if (this.dotList.length === 0) {
-      //重置，不然dotList就是空数组
-      this.dotList = this.historyDot;
-      this.finished = true;
-      console.error('无法绘制：imageData - length: ', imageData.data.length);
-      return;
-    }
-    this.finished = false;
-    if (this.rafId === null) {
-      this.start();
-    }
-  }
-
-  /**
    *  数据处理
    * @private
    */
   _data() {
-    this.dots = [];
     let len = this.dotList.length;
     if (len === 0) {
       this.finished = true;
@@ -504,21 +450,12 @@ class DocumentDot {
         ds.push(d)
       }
     }
-    this.dotList = ds;
+    this.dots = this.dotList = ds;
     this.finished = finishedLen === len;
-    this.dots.push(...ds)
   }
 
-  /**
-   *
-   * @private
-   */
   _draw() {
     this._data();
-    if (this.finished) {
-      this.cancelAnimationFrame();
-      return;
-    }
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     let d, pos;
@@ -560,6 +497,10 @@ class DocumentDot {
         this.ctx.fill();
     }
 
+    if (this.finished) {
+      this.cancelAnimationFrame();
+      return;
+    }
     this.rafId = window.requestAnimationFrame(this._draw.bind(this));
   }
 
@@ -594,7 +535,7 @@ class DocumentDot {
         let i = (y * imageData.width + x) * 4;
         if (imageData.data[i + 3] === 255) {
           dos.push(
-            this.createDot({
+            this._createDot({
               targetDot: {x, y},
               cache,
               radius: r,
@@ -628,6 +569,7 @@ class DocumentDot {
 
   /**
    * 创建粒子
+   * @private
    * @param config{{
    *   initDot?: {
    *     x: number,
@@ -648,7 +590,7 @@ class DocumentDot {
    * }}
    * @return {Dot}
    */
-  createDot(config) {
+  _createDot(config) {
     let dot = this.historyDot.splice(~~(this.historyDot.length * Math.random()), 1)[0];
     if (dot) {// 回用历史粒子
       dot.set({
@@ -681,7 +623,6 @@ class DocumentDot {
     }
   }
 
-
   _isNumber(n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
@@ -691,7 +632,6 @@ class DocumentDot {
     this._draw();
   }
 
-  // noinspection JSUnusedGlobalSymbols
   stop(rightNow = false) {
     this.enabled = false;
     if (rightNow === true) {
