@@ -1,9 +1,11 @@
 import DocumentDot from "./DocumentDot";
 import ColorTools from "./ColorTools";
 import ImageTools from "./ImageTools";
+import MobileDetect from "mobile-detect";
 
 
 (function () {
+  let mobileDetect = new MobileDetect(window.navigator.userAgent);
   let imageData;
   let canvas = document.createElement('canvas');
   canvas.width = window.innerWidth;
@@ -58,7 +60,7 @@ import ImageTools from "./ImageTools";
       color: '#ff7272',
       ctxMode: 'fill-stroke',
       r: 2,
-      cache: true,
+      cache: mobileDetect.mobile()==null,
       initDotMode: 'angle'
     }
   }, {text: "❤", fontSize: 9999});
@@ -95,3 +97,5 @@ import ImageTools from "./ImageTools";
     }
   }
 })();
+
+
