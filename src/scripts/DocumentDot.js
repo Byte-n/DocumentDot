@@ -25,7 +25,7 @@ class DocumentDot {
    // *      marginY,                垂直间距
    // *      fontSize,               默认文本大小，如果文本过大，则后面会自动效准
    // *      dotConfig: {          // 粒子设置
-   // *        color: string | function('stroke'|'fill',Dot):string | {fill: string | function(Dot):string,stroke: string | function(Dot):string }, 参数为function时，如果cache为false,则函数的Dot为undefined
+   // *        color: string | function('stroke'|'fill',Dot):string | {fill: string | function(Dot):string,stroke: string | function(Dot):string }, 参数为function时，如果cache为false,则函数的Dot为undefined。在初始化时，也会调用一次，传入的也是undefined
    // *        ctxMode: 'fill-stroke'|'stroke'|'fill'|'random',  random: cache为true时才有效，否则等效 'fill'
    // *        cache:boolean,    // true:开启缓存，则每个粒子单独绘制缓存，使得每个粒子不一样。
    // *        r: number  粒子半径,
@@ -55,8 +55,8 @@ class DocumentDot {
    *    }}
    * @param texts{
    *    string
-   *   ||{text: string, fontSize?: number, initDotMode?: ('round'|'angle'|'random')}
-   *   ||{imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
+   *   ||{text:string, fontSize?:number, initDotMode?:('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
+   *   ||{imageData: ImageData, initDotMode?: ('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
    *  }
    */
   constructor(param, ...texts) {
@@ -73,9 +73,9 @@ class DocumentDot {
      * 文本数组
      * @type {
      * (
-     *  string||
-     *  {text: string, fontSize?: number, initDotMode?: ("round"|""|"random")}||
-     *  {imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
+     *  string
+     *  ||{text:string, fontSize?:number, initDotMode?:('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
+     *  ||{imageData: ImageData, initDotMode?: ('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
      *  )[]}
      */
     this.textArray = [...texts];
@@ -97,13 +97,11 @@ class DocumentDot {
 
     this.canvas = param.canvas;
     this.textCanvas = document.createElement('canvas');
-    this.imageCanvas = document.createElement('canvas');
-    this.imageCanvas.width = this.textCanvas.width = this.canvas.width;
-    this.imageCanvas.height = this.textCanvas.height = this.canvas.height;
+    this.textCanvas.width = this.canvas.width;
+    this.textCanvas.height = this.canvas.height;
     this.ctx = this.canvas.getContext('2d');
     this.textCtx = this.textCanvas.getContext('2d');
     this.textCtx.textBaseline = "top";
-    this.imageCtx = this.imageCanvas.getContext('2d');
 
     this.rafId = null;
 
@@ -178,6 +176,8 @@ class DocumentDot {
       initDotMode: idm
     };
 
+    this.ctx.strokeStyle = this.dotConfig.color.stroke(undefined);
+    this.ctx.fillStyle = this.dotConfig.color.fill(undefined);
     this.openingAnimation === true && this._openingAnimation();
   }
 
@@ -231,8 +231,8 @@ class DocumentDot {
   /**
    * 添加一个文本到队列中，如果队列为空，则会自动开始动画
    * @param texts{ string
-   *  || {text: string, fontSize?: number, initDotMode?: ('round'|'angle'|'random')}
-   *  || {imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
+   *  || {text:string, fontSize?:number, initDotMode?:('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
+   *  || {imageData: ImageData, initDotMode?: ('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
    *  }
    */
   emitDot(...texts) {
@@ -249,8 +249,8 @@ class DocumentDot {
   /**
    *
    * @param config{ string
-   *  || {text: string, fontSize?: number, initDotMode?: ('round'|'angle'|'random')}
-   *  || {imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}
+   *  || {text:string, fontSize?:number, initDotMode?:('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
+   *  || {imageData: ImageData, initDotMode?: ('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}
    *  }
    * @private
    */
@@ -286,7 +286,7 @@ class DocumentDot {
    * 无论时哪一种途径获取的文本。都支持两行，用'\n'分割
    * 默认文本：''
    *
-   * @param param { string || {text:string,  fontSize?: number, initDotMode: ('round'|'angle'|'random') }}
+   * @param param { string || {text:string, fontSize?:number, initDotMode?:('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}}
    * @return {Dot[]}
    * @private
    */
@@ -294,6 +294,9 @@ class DocumentDot {
     let text = '';
     let fontSize_ = this.fontSize;
     let initDotMode = this.dotConfig.initDotMode
+    let ctxMode = this.dotConfig.ctxMode;
+    let r = this.dotConfig.r;
+    let color = this.dotConfig.color;
 
     switch (typeof param) {
       case "object":
@@ -301,7 +304,18 @@ class DocumentDot {
         if (!isNaN(param.fontSize)) {
           fontSize_ = param.fontSize
         }
-        initDotMode = param.initDotMode || 'random'
+        if (param.initDotMode){
+          initDotMode = param.initDotMode
+        }
+        if (param.initDotMode){
+          ctxMode = param.ctxMode
+        }
+        if (param.r){
+          r = param.r
+        }
+        if (param.color){
+          color = param.color
+        }
         break;
       case "string":
         text = param;
@@ -318,7 +332,7 @@ class DocumentDot {
     let length = strings.length > 1 ? 2 : 1;
 
     this.textCtx.clearRect(0, 0, this.textCanvas.width, this.textCanvas.height);
-    this.textCtx.fillStyle = "#000000";
+    this.textCtx.fillStyle = "#fff";
 
     let h;
     for (let i = 0; i < length; i++) {
@@ -343,16 +357,16 @@ class DocumentDot {
     return this._analyzeCanvas({
       imageData: this.textCtx.getImageData(0, 0, this.textCanvas.width, this.textCanvas.height),
       initDotMode,
-      ctxMode: this.dotConfig.ctxMode,
-      r: this.dotConfig.r,
+      ctxMode,
+      r,
       boundary: {w: this.canvas.width, h: this.canvas.height},
       cache: this.dotConfig.cache,
-      color: this.dotConfig["color"]
+      color
     });
   }
 
   /**
-   * @param config{{imageData: ImageData,initDotMode?: ('round'|'angle'|'random')}}
+   * @param config{{imageData: ImageData, initDotMode?: ('round'|'angle'|'random'), ctxMode?:('fill'|'fill-stroke'|'stroke'|'random'), r?:number, color?:{fill: (function(Dot): string), stroke: (function(Dot): string)}}}
    * @return {Dot[]}
    * @private
    */
@@ -362,14 +376,14 @@ class DocumentDot {
       return [];
     }
     let initDotMode = config.initDotMode || this.dotConfig.initDotMode;
-    let ctxMode = this.dotConfig.ctxMode;
-    let r = this.dotConfig.r;
+    let ctxMode = config.ctxMode || this.dotConfig.ctxMode;
+    let r = config.r || this.dotConfig.r;
     let boundary = {w: config.imageData.width, h: config.imageData.height} || {
       w: this.canvas.width,
       h: this.canvas.height
     };
     let cache = this.dotConfig.cache;
-    let color = this.dotConfig.color;
+    let color = config.color || this.dotConfig.color;
     let index = 0;
 
     return this._analyzeCanvas({
@@ -433,7 +447,7 @@ class DocumentDot {
     let len = this.dotList.length;
     if (len === 0) {
       this.finished = true;
-      return;
+      return this.dots;
     }
 
     let finishedLen = 0;
@@ -452,33 +466,32 @@ class DocumentDot {
     }
     this.dots = this.dotList = ds;
     this.finished = finishedLen === len;
+    return this.dots;
   }
 
   _draw() {
-    this._data();
+    let dots = this._data();
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    let d, pos;
+    let d, len;
+    len = dots.length;
     if (this.dotConfig.cache) {
-      for (let i = 0; i < this.dots.length; i++) {
-        d = this.dots[i]
-        pos = d.currentDot;
+      for (let i = 0; i < len; i++) {
+        d = dots[i];
         if (d.cahce) {
-          this.ctx.drawImage(d.canvas, pos.x, pos.y);
+          this.ctx.drawImage(d.canvas, (0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0);
         }
       }
       this.rafId = window.requestAnimationFrame(this._draw.bind(this));
       return;
     }
 
-    this.ctx.strokeStyle = this.dotConfig.color.stroke(undefined);
-    this.ctx.fillStyle = this.dotConfig.color.fill(undefined);
     this.ctx.beginPath();
-    for (let i = 0; i < this.dots.length; i++) {
-      d = this.dots[i]
-      pos = d.currentDot;
-      this.ctx.moveTo(pos.x + this.dotConfig.r, pos.y)
-      this.ctx.arc(pos.x, pos.y, d.radius, 0, 2 * Math.PI);
+    let P = 2 * Math.PI;
+    for (let i = 0; i < len; i++) {
+      d = dots[i]
+      this.ctx.moveTo((0.5 + (d.currentDot.x + this.dotConfig.r)) << 0, (0.5 + d.currentDot.y) << 0)
+      this.ctx.arc((0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0, d.radius, 0, P);
     }
     this.ctx.closePath();
     switch (this.dotConfig.ctxMode) {
@@ -529,7 +542,7 @@ class DocumentDot {
     let index = typeof config.index === 'number' ? config.index : 0;
     let color = config.color;
     let dos = [];
-    let __ = r < 2 ? r : 2;
+    let __ = r <= 4 ? 1 : 2;
     for (let x = 0; x < imageData.width; x += ((r * 2) + __)) {
       for (let y = 0; y < imageData.height; y += ((r * 2) + __)) {
         let i = (y * imageData.width + x) * 4;
@@ -543,7 +556,13 @@ class DocumentDot {
               boundary: boundary,
               color,
               ctxMode: ctxMode(),
-              index: index++
+              index: index++,
+              rgba: {
+                r: imageData.data[i],
+                g: imageData.data[i + 1],
+                b: imageData.data[i + 2],
+                a: imageData.data[i + 3] / 255
+              }
             })
           )
         }
@@ -559,8 +578,16 @@ class DocumentDot {
       while (this.historyDot.length !== 0) {
         d2 = this.historyDot.splice(~~(this.historyDot.length * Math.random()), 1)[0];
         d = dos[~~(l * Math.random())].clone();
+        d2.set({
+          targetDot: d.targetDot,
+          radius: d.radius,
+          delay: d.delay,
+          color: d.color,
+          ctxMode: d.ctxMode,
+          index: index++,
+          rgba: d.rgba
+        })
         d2.finishdRemove = true;
-        d2.setNewTargetDot(d.targetDot);
         dos.push(d2);
       }
     }
@@ -585,6 +612,7 @@ class DocumentDot {
    *   boundary?: {w:number,h:number},
    *   delay?: number,
    *   color?:{fill: function(Dot):string, stroke: function(Dot):string},
+   *   rgba?:{r:number,g:number,b:number,a:number},
    *   ctxMode?:('fill'|'fill-stroke'|'stroke'),
    *   index: number
    * }}
@@ -594,17 +622,18 @@ class DocumentDot {
     let dot = this.historyDot.splice(~~(this.historyDot.length * Math.random()), 1)[0];
     if (dot) {// 回用历史粒子
       dot.set({
+        p: 0,
         initDot: config.initDot,
         targetDot: config.targetDot,
+        radius: config.radius,
         initDotMode: config.initDotMode,
         boundary: config.boundary,
         delay: config.delay,
+        color: config.color,
+        ctxMode: config.ctxMode,
+        cache: config.cache,
         index: config.index,
-        // 不能触发缓存重绘，重绘的话，视觉上像所有粒子位置瞬间打乱了。
-        // cache: config.cache,
-        // radius: config.radius,
-        // color: config.color,
-        // ctxMode: config.ctxMode
+        rgba: config.rgba
       })
       return dot;
     } else {
@@ -618,7 +647,8 @@ class DocumentDot {
         color: config.color,
         ctxMode: config.ctxMode,
         cache: config.cache,
-        index: config.index
+        index: config.index,
+        rgba: config.rgba
       })
     }
   }
@@ -664,6 +694,7 @@ class Dot {
    *   boundary?: {w:number,h:number},
    *   delay?: number,
    *   color?:{fill: function(Dot):string, stroke: function(Dot):string},
+   *   rgba?:{r:number,g:number,b:number,a:number},
    *   ctxMode?:('fill'|'fill-stroke'|'stroke'),
    *   index?:number
    * }}
@@ -712,12 +743,12 @@ class Dot {
     Object.assign(this.currentDot, this.initDot);
 
     /**
-     * 是否删除
+     * 是否完成
      * @type {boolean}
      */
-    this.finishd = false;
+    this.finished = false;
     /**
-     * 完成后是否
+     * 完成后是否删除
      * @type {boolean}
      */
     this.finishdRemove = false;
@@ -736,6 +767,11 @@ class Dot {
       stroke: '#fff'
     }
     /**
+     * 原始图像的颜色。
+     * @type {{r: number, g: number, b: number, a: number}|{}}
+     */
+    this.rgba = config.rgba || {}
+    /**
      * 绘制模式
      * @type {'fill'|'fill-stroke'|'stroke'}
      */
@@ -746,6 +782,7 @@ class Dot {
      * @type {boolean}
      */
     this.cahce = config.cache;
+    this._refreshCache = false;
 
     if (!this.cahce) {
       return;
@@ -777,7 +814,7 @@ class Dot {
    *     x: number,
    *     y: number
    *   },
-   *   targetDot: {
+   *   targetDot?: {
    *     x: number,
    *     y: number
    *   },
@@ -787,12 +824,13 @@ class Dot {
    *   boundary?: {w:number,h:number},
    *   delay?: number,
    *   color?:{fill: function(Dot):string, stroke: function(Dot):string},
+   *   rgba?:{r:number,g:number,b:number,a:number},
    *   ctxMode?:('fill'|'fill-stroke'|'stroke'),
-   *   index:number
+   *   index?:number,
+   *   p?:number
    * }}
    */
   set(config) {
-    let refreshCache = false;
     if (config.initDot) {
       this.initDot = config.initDot;
     } else if (config.initDotMode && config.boundary) {
@@ -808,13 +846,20 @@ class Dot {
     if (config.index) {
       this.index = config.index;
     }
+    if (config.p) {
+      this.p = config.p;
+    }
+    if (config.rgba) {
+      this.rgba = config.rgba;
+      this._refreshCache = true;
+    }
     if (config.cache) {
       this.cahce = config.cache;
-      refreshCache = true;
+      this._refreshCache = true;
     }
     if (config.radius && config.radius !== this.radius) {
       this.radius = config.radius;
-      refreshCache = true;
+      this._refreshCache = true;
     }
     if (
       config.color
@@ -822,13 +867,12 @@ class Dot {
       (this.color.fill !== config.color.fill || this.color.stroke !== config.color.stroke)
     ) {
       this.color = config.color;
-      refreshCache = true;
+      this._refreshCache = true;
     }
     if (config.ctxMode && config.ctxMode !== this.ctxMode) {
       this.setCtxMode(config.ctxMode);
-      refreshCache = true;
+      this._refreshCache = true;
     }
-    refreshCache && this.refreshCache();
   }
 
   refreshCache() {
@@ -863,38 +907,46 @@ class Dot {
    * @return {Dot}
    */
   clone() {
-    let d = new Dot({
-      initDot: this.initDot,
-      targetDot: this.targetDot,
-      radius: this.radius,
-      cache: true,
-      color: this.color
-    });
-    Object.assign(d.currentDot, this.currentDot)
-    d.delay = this.delay;
+    // let d = new Dot({
+    //   initDot: this.initDot,
+    //   targetDot: this.targetDot,
+    //   radius: this.radius,
+    //   cache: true,
+    //   color: this.color
+    // });
+    // Object.assign(d.currentDot, this.currentDot)
+    // d.delay = this.delay;
+    // d.delayCount = this.delayCount;
+    // d.p = this.p;
+    // d.finished = this.finished;
+    // d.finishdRemove = this.finishdRemove;
+    //
+    // d.color.fill = this.color.fill;
+    // d.color.stroke = this.color.stroke;
+    // d.rgba = this.rgba;
+    // d.ctxMode = this.ctxMode;
+    // d.cahce = this.cahce;
+    // d.index = this.index;
+    // d.refreshCache();
+    let config = {...this};
+    let d = new Dot(config);
     d.delayCount = this.delayCount;
     d.p = this.p;
-    d.finishd = this.finishd;
+    d.finished = this.finished;
     d.finishdRemove = this.finishdRemove;
-
-    d.color.fill = this.color.fill;
-    d.color.stroke = this.color.stroke;
-    d.ctxMode = this.ctxMode;
-    d.cahce = this.cahce;
-    d.index = this.index;
-    d.refreshCache();
+    d._refreshCache = this._refreshCache;
     return d;
   }
 
   /**
-   *  重新设置目标点
+   *  重新设置目标点,并重置p,finished,delayCount
    * @param target{{x:number,y:number}}
    */
   setNewTargetDot(target) {
     Object.assign(this.initDot, this.currentDot);
     Object.assign(this.targetDot, target);
     this.p = 0;
-    this.finishd = false;
+    this.finished = false;
     this.delayCount = 0;
   }
 
@@ -948,9 +1000,16 @@ class Dot {
       this.delayCount++;
       return false;
     }
-    if (this.finishd || this.p === 200) {
-      this.finishd = true;
+    if (this.finished || this.p >= 200) {
+      this.finished = true;
       return true;
+    }
+    if (this._refreshCache === true && this.p >= 52) {
+      this._refreshCache = false;
+      // 异步
+      setTimeout(function () {
+        this.refreshCache();
+      }.bind(this), 0)
     }
     target = target || this.targetDot;
     this.p += 1;
