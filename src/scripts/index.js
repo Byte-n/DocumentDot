@@ -96,6 +96,33 @@ import MobileDetect from "mobile-detect";
       console.error('无法加载图片：', image.src)
     }
   }
+
+
+  window.addEventListener('load', function () {
+    // serviceWorker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js',)
+        // .then(res => {
+        //   // console.log('res：', res);
+        // })
+        // .catch(err => {
+        //   console.log('err：', err);
+        // })
+    }
+
+    // 通知
+    // if (Notification.permission === 'default') {
+    //   Notification.requestPermission();
+    // }
+    //
+    // if (!navigator.onLine) {
+    //   new Notification('提示', {body: '你当前没有网络，你访问的内容来自缓存'});
+    // }
+    //
+    // window.addEventListener('online', function () {
+    //   new Notification('提示', {body: '你已经连接上网络'});
+    // })
+  })
 })();
 
 

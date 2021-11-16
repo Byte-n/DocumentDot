@@ -471,43 +471,46 @@ class DocumentDot {
 
   _draw() {
     let dots = this._data();
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    let ctx = this.ctx;
 
     let d, len;
     len = dots.length;
+
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
     if (this.dotConfig.cache) {
       for (let i = 0; i < len; i++) {
         d = dots[i];
         if (d.cahce) {
-          this.ctx.drawImage(d.canvas, (0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0);
+          ctx.drawImage(d.canvas, (0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0);
         }
       }
       this.rafId = window.requestAnimationFrame(this._draw.bind(this));
       return;
     }
 
-    this.ctx.beginPath();
+    ctx.beginPath();
     let P = 2 * Math.PI;
     for (let i = 0; i < len; i++) {
       d = dots[i]
-      this.ctx.moveTo((0.5 + (d.currentDot.x + this.dotConfig.r)) << 0, (0.5 + d.currentDot.y) << 0)
-      this.ctx.arc((0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0, d.radius, 0, P);
+      ctx.moveTo((0.5 + (d.currentDot.x + this.dotConfig.r)) << 0, (0.5 + d.currentDot.y) << 0)
+      ctx.arc((0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0, d.radius, 0, P);
     }
-    this.ctx.closePath();
+    ctx.closePath();
     switch (this.dotConfig.ctxMode) {
       case "fill":
-        this.ctx.fill();
+        ctx.fill();
         break;
       case 'stroke':
-        this.ctx.stroke();
+        ctx.stroke();
         break;
       case 'fill-stroke':
-        this.ctx.fill();
-        this.ctx.stroke();
+        ctx.fill();
+        ctx.stroke();
         break;
       case 'random':
       default:
-        this.ctx.fill();
+        ctx.fill();
     }
 
     if (this.finished) {

@@ -1,0 +1,17 @@
+{
+  "name": "DocumentDot",
+  "short_name": "DocDot",
+  "description": "你可以让粒子替你表达！",
+  "start_url": "./index.html",
+  "icons": [
+    {
+      "src": "./res/icon.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    }
+  ],
+  "display": "standalone",
+  "theme_color": "pink",
+  "background_color": "pink",
+  "scope": "/"
+}

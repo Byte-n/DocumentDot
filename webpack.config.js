@@ -36,7 +36,7 @@ module.exports = {
         contentBase: '/dist',  //默认本地服务器所在的根目录
         historyApiFallback: true,   //是否跳转到index.html
         inline: true,   //源文件改变时刷新页面
-        // port: 8086, //端口号，默认8080
+        port: 9999, //端口号，默认8080
         index: "index.html" // 服务器主页名称
     },
     plugins: [
@@ -58,6 +58,12 @@ module.exports = {
                     // 打包CSS 时，压缩CSS
                     return new CleanCSS({level: 1}).minify(content).styles;
                 }
+            }
+        ]),
+        new CopyWebpackPlugin([
+            {
+                from: __dirname + '/src/root',
+                to: './'
             }
         ]),
         new CopyWebpackPlugin([
