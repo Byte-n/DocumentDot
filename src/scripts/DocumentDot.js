@@ -790,9 +790,10 @@ class Dot {
     if (!this.cahce) {
       return;
     }
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = this.radius * 2;
-    this.canvas.height = this.radius * 2;
+    // this.canvas = document.createElement('canvas');
+    // this.canvas.width = this.radius * 2;
+    // this.canvas.height = this.radius * 2;
+    this.canvas = new OffscreenCanvas(this.radius * 2,this.radius * 2);
     this.ctx = this.canvas.getContext('2d');
     this.refreshCache();
   }
@@ -1003,26 +1004,36 @@ class Dot {
       this.delayCount++;
       return false;
     }
-    if (this.finished || this.p >= 200) {
+    const amount = 100;
+    if (this.finished || this.p >= amount) {
       this.finished = true;
       return true;
     }
     if (this._refreshCache === true && this.p >= 52) {
       this._refreshCache = false;
-      // 异步
-      setTimeout(function () {
-        this.refreshCache();
-      }.bind(this), 0)
+      // setTimeout(function () {
+      //   this.refreshCache();
+      // }.bind(this), 0)
+      this.refreshCache();
     }
     target = target || this.targetDot;
     this.p += 1;
-    let p = Easing.easeInOutSine(this.p / 200);
+    let p = Easing.easeInOutSine(this.p / amount);
     let x = this.initDot.x + (target.x - this.initDot.x) * p;
     let y = this.initDot.y + (target.y - this.initDot.y) * p;
     this.currentDot = {
       x, y
     }
     return false;
+  }
+  /**
+   *  立刻移动到目标点
+   *  <br> 动画速度：easeInOutSine
+   * @param target{{x:number,y:number}} 目标点
+   * @return{boolean} true:已经到达目标点，false: 未到达或者未开始移动
+   */
+  moveToTargetNow(target){
+
   }
 }
 

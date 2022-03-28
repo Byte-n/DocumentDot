@@ -66,9 +66,9 @@ import MobileDetect from "mobile-detect";
   }, {text: "❤", fontSize: 9999});
   documentDot.animation();
 
-
-  loadDotsFormImage('res/1.png');
-  loadDotsFormImage('res/2.png');
+  texts=[]
+  loadDotsFormImage('res/a.png');
+  // loadDotsFormImage('res/2.png');
 
   function loadDotsFormImage(src) {
     let image = new Image();
