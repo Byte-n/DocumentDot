@@ -5,7 +5,7 @@ import DocumentDot from "./script/DocumentDot";
 import ImageTools from "./script/ImageTools";
 // @ts-ignore
 import MobileDetect from "mobile-detect";
-import {CtxMode, DocumentText, DotInitMode} from "./script/Type";
+import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode} from "./script/Type";
 
 (function () {
     let mobileDetect = new MobileDetect(window.navigator.userAgent);
@@ -26,14 +26,14 @@ import {CtxMode, DocumentText, DotInitMode} from "./script/Type";
         ctxMode: CtxMode.Stroke,
         color: {fill: () => '#ff7272', stroke: () => '#ff7272'}
     }];
-    texts = ['.']
+    texts = ['.','..','...']
     // texts = ["1.", "2..", "3...", "文档粒子"];
     // texts = [{text: 'A', color: {fill: () => 'red', stroke: () => 'red'}},
     // {text: 'a', color: {fill: () => '#fff', stroke: () => '#fff'}}]
     const documentDot = new DocumentDot({
-        box : document.body,
-        canvasCount:4,
-        width:window.innerWidth,
+        box: document.body,
+        canvasCount: 4,
+        width: window.innerWidth,
         height: window.innerHeight,
         marginX: 10,
         marginY: 10,
@@ -57,11 +57,13 @@ import {CtxMode, DocumentText, DotInitMode} from "./script/Type";
     // @ts-ignore
     window.documentDot = documentDot;
     texts = []
-    loadDotsFormImage('res/a.png');
-    loadDotsFormImage('res/2.png');
-    loadDotsFormImage('res/b.png');
+    loadDotsFormImage('res/2.png', (text) => {
+        texts.push(text)
+    });
+    // loadDotsFormImage('res/2.png');
+    // loadDotsFormImage('res/b.png');
 
-    function loadDotsFormImage(src: string) {
+    function loadDotsFormImage(src: string, callback: (text: DocumentTextImageData) => void) {
         let image = new Image();
         image.src = src;
         image.onload = function () {
@@ -76,7 +78,7 @@ import {CtxMode, DocumentText, DotInitMode} from "./script/Type";
             ctx.clearRect(0, 0, can.width, can.height);
             ctx.drawImage(image, c.dx, c.dy, c.dw, c.dh)
             imageData = ctx.getImageData(0, 0, can.width, can.height);
-            texts.unshift({
+            callback({
                 imageData,
                 ctxMode: CtxMode.FillStroke,
                 color: {
