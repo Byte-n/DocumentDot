@@ -91,10 +91,18 @@ export default class Dot {
         this.setCtxMode(config.ctxMode)
         this.cache = config.cache;
 
+        // this.canvas = new OffscreenCanvas(this.radius * 2, this.radius * 2);
         this.canvas = new OffscreenCanvas(this.radius * 2, this.radius * 2);
         this.ctx = this.canvas.getContext('2d') as unknown as CanvasRenderingContext2D;
 
+        this.ctx.fillStyle = this.color.fill(this);
+        this.ctx.strokeStyle = this.color.stroke(this);
         this.refreshCache();
+
+
+        // const offscreen = document.querySelector('canvas').transferControlToOffscreen();
+        // const worker = new Worker('myworkerurl.js');
+        // worker.postMessage({ canvas: offscreen }, [offscreen]);
     }
 
 
@@ -142,6 +150,8 @@ export default class Dot {
             (this.color.fill !== config.color.fill || this.color.stroke !== config.color.stroke)
         ) {
             this.color = config.color;
+            this.ctx.fillStyle = this.color.fill(this);
+            this.ctx.strokeStyle = this.color.stroke(this);
             this._refreshCache = true;
         }
         if (config.ctxMode && config.ctxMode !== this.ctxMode) {
@@ -154,12 +164,10 @@ export default class Dot {
         if (!this.cache) {
             return;
         }
-        this.ctx.fillStyle = this.color.fill(this);
-        this.ctx.strokeStyle = this.color.stroke(this);
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.beginPath();
+        // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // this.ctx.beginPath();
         this.ctx.arc(this.radius, this.radius, this.radius - 0.5, 0, Math.PI * 2);
-        this.ctx.closePath();
+        // this.ctx.closePath();
         switch (this.ctxMode) {
             case CtxMode.Fill:
                 this.ctx.fill();

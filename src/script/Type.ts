@@ -12,7 +12,7 @@ export type Rect = {
     h: number
 }
 export type DotColor = {
-    fill: (dot: Dot ) => string,
+    fill: (dot: Dot) => string,
     stroke: (dit: Dot) => string
 }
 export type RGBA = {
@@ -31,8 +31,8 @@ export type DotConfig = {
     ctxMode?: CtxMode,
     index?: number,
     r?: number,
-    p?:number,
-    pAmount:number
+    p?: number,
+    pAmount: number
 }
 export type DocumentDotConfigCallback = {
     //callback 会在interval结束后触发
@@ -40,8 +40,17 @@ export type DocumentDotConfigCallback = {
     // one表示该回调函数在执行之后会被删除，'forever' 代表每次都会执行
     callbackType: ('one' | 'forever')
 };
-export type DocumentDotConfig = {
+export type MyCanvas = {
     canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number
+}
+export type DocumentDotConfig = {
+    box: HTMLElement,
+    canvasCount: number,
+    width: number,
+    height: number,
     callback?: DocumentDotConfigCallback,
     //是否有开场动画
     openingAnimation?: boolean,
@@ -56,14 +65,14 @@ export type DocumentDotConfig = {
         color?: string |
             ((ctxMode: CtxMode, dot: Dot) => string)
             | {
-            fill: string | ((dot: Dot ) => string),
+            fill: string | ((dot: Dot) => string),
             stroke: string | ((dot: Dot) => string),
         },
         ctxMode?: CtxMode,
         cache?: boolean,
         r?: number,
         initDotMode?: DotInitMode,
-        pAmount?:number
+        pAmount?: number
     }
 }
 export type DocumentText = DocumentTextString | DocumentTextStringExtend | DocumentTextImageData;
@@ -71,11 +80,10 @@ export type DocumentTextString = string;
 export type DocumentTextStringExtend = { text: DocumentTextString, fontSize?: number, initDotMode?: DotInitMode, ctxMode?: CtxMode, r?: number, color?: DotColor }
 export type DocumentTextImageData = { imageData: ImageData, initDotMode?: DotInitMode, ctxMode?: CtxMode, r?: number, color?: DotColor }
 export type AnalyzeCanvasConfig = {
-    imageData?: ImageData,
+    imageData: ImageData,
     initDotMode?: DotInitMode,
     ctxMode?: CtxMode,
     r?: number,
-    boundary?: Rect,
     index?: number,
     color?: DotColor
 }
@@ -88,11 +96,11 @@ export enum DotInitMode {
     Round, Angle
 }
 
-export const DefaultDotColor:DotColor = {
-    fill(_d){
-        return'pink'
+export const DefaultDotColor: DotColor = {
+    fill(_d) {
+        return 'pink'
     },
-    stroke(_d){
-        return'pink'
+    stroke(_d) {
+        return 'pink'
     }
 }

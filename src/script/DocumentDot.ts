@@ -16,7 +16,7 @@ import {
     DocumentTextStringExtend,
     DotColor,
     DotConfig,
-    DotInitMode
+    DotInitMode, MyCanvas
 } from "./Type";
 import Dot from "./Dot";
 
@@ -32,9 +32,8 @@ class DocumentDot {
     dotList: Array<Dot> = new Array<Dot>();
     //上一波的历史粒子
     historyDot: Array<Dot> = new Array<Dot>();
-    canvas: HTMLCanvasElement
     textCanvas: OffscreenCanvas
-    ctx: CanvasRenderingContext2D
+
     textCtx: CanvasRenderingContext2D
     rafId: number = -1
     fontSize = 500
@@ -52,6 +51,31 @@ class DocumentDot {
         pAmount: number
     }
 
+    box: HTMLElement
+    width: number
+    height: number
+
+    canvasList: Array<MyCanvas> = []
+
+    createMyCanvas(count: number = 10) {
+        if (count < 0) {
+            return
+        }
+        let canvas = document.createElement('canvas');
+        canvas.width = this.width;
+        canvas.height = this.height;
+        canvas.style.position = 'fixed'
+        canvas.style.top = '0'
+        canvas.style.left = '0'
+        this.box.append(canvas);
+        this.canvasList.push({
+            canvas,
+            ctx: canvas.getContext('2d') as unknown as CanvasRenderingContext2D,
+            width: canvas.width,
+            height: canvas.height
+        })
+        this.createMyCanvas(--count)
+    }
 
     /**
      *  无法绘制的情况下，会直接跳过。
@@ -61,11 +85,13 @@ class DocumentDot {
      */
     constructor(param: DocumentDotConfig, ...texts: Array<DocumentText>) {
         this.textArray = [...texts];
-        this.canvas = param.canvas;
-        this.textCanvas = new OffscreenCanvas(this.canvas.width, this.canvas.height);
-        // this.textCanvas.width = this.canvas.width;
-        // this.textCanvas.height = this.canvas.height;
-        this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
+        this.box = param.box;
+        this.width = param.width;
+        this.height = param.height;
+        this.createMyCanvas(param.canvasCount);
+        this.textCanvas = new OffscreenCanvas(this.width, this.height);
+        // this.textCanvas.width = this.width;
+        // this.textCanvas.height = this.height;
         this.textCtx = this.textCanvas.getContext('2d') as unknown as CanvasRenderingContext2D;
         this.textCtx.textBaseline = "top";
 
@@ -135,9 +161,12 @@ class DocumentDot {
         };
         // 不开启缓存
         if (!this.dotConfig.cache) {
-            let d = new Dot({targetDot: {x: 0, y: 0}, color: this.dotConfig.color,pAmount:100});
-            this.ctx.strokeStyle = this.dotConfig.color.stroke(d);
-            this.ctx.fillStyle = this.dotConfig.color.fill(d);
+            let d = new Dot({targetDot: {x: 0, y: 0}, color: this.dotConfig.color, pAmount: 100});
+            for (let i = 0; i < this.canvasList.length; i++) {
+                let ctx = this.canvasList[i].ctx;
+                 ctx.strokeStyle = this.dotConfig.color.stroke(d);
+                 ctx.fillStyle = this.dotConfig.color.fill(d);
+            }
         }
         this.openingAnimation && this._openingAnimation();
     }
@@ -173,7 +202,7 @@ class DocumentDot {
         d && this._emit(d);
         this.enabled = true;
         this.finished = false;
-        this._draw();
+        this.executeDraw();
     }
 
     /**
@@ -311,7 +340,6 @@ class DocumentDot {
             initDotMode,
             ctxMode,
             r,
-            boundary: {w: this.canvas.width, h: this.canvas.height},
             color
         });
     }
@@ -325,8 +353,8 @@ class DocumentDot {
         let ctxMode = config.ctxMode || this.dotConfig.ctxMode;
         let r = config.r || this.dotConfig.r;
         let boundary = {w: config.imageData.width, h: config.imageData.height} || {
-            w: this.canvas.width,
-            h: this.canvas.height
+            w: this.width,
+            h: this.height
         };
         let color = config.color || this.dotConfig.color;
         let index = 0;
@@ -336,7 +364,6 @@ class DocumentDot {
             initDotMode,
             ctxMode,
             r,
-            boundary,
             color, index
         });
     }
@@ -354,7 +381,7 @@ class DocumentDot {
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
                 cache: this.dotConfig.cache,
-                pAmount:this.dotConfig.pAmount
+                pAmount: this.dotConfig.pAmount
             }),
             new Dot({
                 initDot: {x: window.innerWidth, y: 0},
@@ -363,7 +390,7 @@ class DocumentDot {
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
                 cache: this.dotConfig.cache,
-                pAmount:this.dotConfig.pAmount
+                pAmount: this.dotConfig.pAmount
             }),
             new Dot({
                 initDot: {x: window.innerWidth, y: window.innerHeight},
@@ -372,7 +399,7 @@ class DocumentDot {
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
                 cache: this.dotConfig.cache,
-                pAmount:this.dotConfig.pAmount
+                pAmount: this.dotConfig.pAmount
             }),
             new Dot({
                 initDot: {x: 0, y: window.innerHeight},
@@ -381,7 +408,7 @@ class DocumentDot {
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
                 cache: this.dotConfig.cache,
-                pAmount:this.dotConfig.pAmount
+                pAmount: this.dotConfig.pAmount
             })
         ]
         this.textArray.unshift({text: '.', fontSize: 99})
@@ -417,13 +444,28 @@ class DocumentDot {
         return this.dots;
     }
 
-    _draw() {
-        let dots = this._data();
-        let ctx = this.ctx;
+    executeDraw() {
+        let dots = this._data().concat([]);
+        let len = this.canvasList.length;
+        let len2 = dots.length;
+        let max = parseInt((len2 / (len )) + '');
+        for (let i = 0; i < len; i++) {
+            this._draw(dots.splice(0, max), this.canvasList[i]);
+        }
+        if (this.finished) {
+            this.finishCallback()
+        } else {
+            this.rafId = window.requestAnimationFrame(this.executeDraw.bind(this));
+        }
+
+    }
+
+    _draw(dots: Dot[], mc: MyCanvas) {
+        let ctx = mc.ctx;
         let d, len;
         len = dots.length;
 
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.clearRect(0, 0, this.width, this.height);
 
         if (this.dotConfig.cache) {
             for (let i = 0; i < len; i++) {
@@ -431,11 +473,6 @@ class DocumentDot {
                 if (d.cache) {
                     ctx.drawImage(d.canvas, (0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0);
                 }
-            }
-            if (this.finished) {
-                this.finishCallback()
-            } else {
-                this.rafId = window.requestAnimationFrame(this._draw.bind(this));
             }
             return;
         }
@@ -460,11 +497,6 @@ class DocumentDot {
                 ctx.stroke();
                 break;
         }
-        if (this.finished) {
-            this.finishCallback()
-        } else {
-            this.rafId = window.requestAnimationFrame(this._draw.bind(this));
-        }
     }
 
     /**
@@ -477,8 +509,7 @@ class DocumentDot {
         let ctxMode = config.ctxMode;
         let r = config.r || this.dotConfig.r;
         let cache = this.dotConfig.cache;
-        let boundary = config.boundary || {w: this.canvas.width, h: this.canvas.height};
-        let imageData = config.imageData || this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        let imageData = config.imageData;
         let index = typeof config.index === 'number' ? config.index : 0;
         let color = config.color || this.dotConfig.color;
         let dos = [];
@@ -493,7 +524,7 @@ class DocumentDot {
                             cache,
                             radius: r,
                             initDotMode,
-                            boundary: boundary,
+                            boundary: {w: this.width, h: this.height},
                             color,
                             ctxMode,
                             index: index++,

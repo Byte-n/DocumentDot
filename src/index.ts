@@ -10,14 +10,14 @@ import {CtxMode, DocumentText, DotInitMode} from "./script/Type";
 (function () {
     let mobileDetect = new MobileDetect(window.navigator.userAgent);
     let imageData;
-    let canvas = document.createElement('canvas');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    canvas.style.position = 'fixed'
-    canvas.style.top = '0'
-    canvas.style.left = '0'
+    // let canvas = document.createElement('canvas');
+    // canvas.width = window.innerWidth;
+    // canvas.height = window.innerHeight;
+    // canvas.style.position = 'fixed'
+    // canvas.style.top = '0'
+    // canvas.style.left = '0'
 
-    document.body.append(canvas);
+    // document.body.append(canvas);
 
     let texts: Array<DocumentText> = [{
         text: "❤",
@@ -31,7 +31,10 @@ import {CtxMode, DocumentText, DotInitMode} from "./script/Type";
     // texts = [{text: 'A', color: {fill: () => 'red', stroke: () => 'red'}},
     // {text: 'a', color: {fill: () => '#fff', stroke: () => '#fff'}}]
     const documentDot = new DocumentDot({
-        canvas: canvas,
+        box : document.body,
+        canvasCount:4,
+        width:window.innerWidth,
+        height: window.innerHeight,
         marginX: 10,
         marginY: 10,
         callback: {
@@ -63,8 +66,8 @@ import {CtxMode, DocumentText, DotInitMode} from "./script/Type";
         image.src = src;
         image.onload = function () {
             let can = document.createElement('canvas');
-            can.width = documentDot.canvas.width;
-            can.height = documentDot.canvas.height;
+            can.width = documentDot.width;
+            can.height = documentDot.height;
             let ctx = can.getContext('2d') as CanvasRenderingContext2D;
             let c = ImageTools.contain({width: image.width, height: image.height}, {
                 width: can.width,
