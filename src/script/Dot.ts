@@ -144,11 +144,8 @@ export default class Dot {
             this.radius = config.radius;
             this._refreshCache = true;
         }
-        if (
-            config.color
-            &&
-            (this.color.fill !== config.color.fill || this.color.stroke !== config.color.stroke)
-        ) {
+        // 有就必须处理了，因为color是函数类型，无法在执行前预知返回内容
+        if (config.color) {
             this.color = config.color;
             this.ctx.fillStyle = this.color.fill(this);
             this.ctx.strokeStyle = this.color.stroke(this);
@@ -265,7 +262,7 @@ export default class Dot {
         if (targetP) {
             this.p = targetP;
         }
-        if (this._refreshCache && this.p >= this.pAmount/3) {
+        if (this._refreshCache && this.p >= this.pAmount / 3) {
             this._refreshCache = false;
             this.refreshCache();
         }

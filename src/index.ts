@@ -26,7 +26,7 @@ import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode} from "./scrip
         ctxMode: CtxMode.Stroke,
         color: {fill: () => '#ff7272', stroke: () => '#ff7272'}
     }];
-    texts = ['.','..','...']
+    texts = ['.']//,'..','...'
     // texts = ["1.", "2..", "3...", "文档粒子"];
     // texts = [{text: 'A', color: {fill: () => 'red', stroke: () => 'red'}},
     // {text: 'a', color: {fill: () => '#fff', stroke: () => '#fff'}}]
@@ -58,6 +58,9 @@ import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode} from "./scrip
     window.documentDot = documentDot;
     texts = []
     loadDotsFormImage('res/2.png', (text) => {
+        texts.push(text)
+    });
+    loadDotsFormImage('res/e.png', (text) => {
         texts.push(text)
     });
     // loadDotsFormImage('res/2.png');
