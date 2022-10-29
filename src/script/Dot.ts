@@ -53,7 +53,7 @@ export default class Dot {
      */
     rgba: RGBA = {r: -1, g: -1, b: -1, a: -1}
     ctxMode: CtxMode
-    cache: boolean | undefined = false
+    colourful: boolean | undefined = false
     _refreshCache: boolean = false
     canvas: OffscreenCanvas
     ctx: CanvasRenderingContext2D
@@ -89,7 +89,7 @@ export default class Dot {
 
         this.ctxMode = CtxMode.Fill;
         this.setCtxMode(config.ctxMode)
-        this.cache = config.cache;
+        this.colourful = config.colourful;
 
         // this.canvas = new OffscreenCanvas(this.radius * 2, this.radius * 2);
         this.canvas = new OffscreenCanvas(this.radius * 2, this.radius * 2);
@@ -136,8 +136,8 @@ export default class Dot {
             this.rgba = config.rgba;
             this._refreshCache = true;
         }
-        if (config.cache) {
-            this.cache = config.cache;
+        if (config.colourful) {
+            this.colourful = config.colourful;
             this._refreshCache = true;
         }
         if (config.radius && config.radius !== this.radius) {
@@ -158,7 +158,7 @@ export default class Dot {
     }
 
     refreshCache() {
-        if (!this.cache) {
+        if (!this.colourful) {
             return;
         }
         // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -177,7 +177,6 @@ export default class Dot {
                 this.ctx.stroke();
                 break;
         }
-        this.ctx.save();
     }
 
     /**

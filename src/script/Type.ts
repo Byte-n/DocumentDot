@@ -22,7 +22,7 @@ export type DotConfig = {
     targetDot: Point,
     color: DotColor,
     initDot?: Point,
-    cache?: boolean,
+    colourful?: boolean,
     radius?: number,
     initDotMode?: DotInitMode,
     boundary?: Rect,
@@ -69,7 +69,7 @@ export type DocumentDotConfig = {
             stroke: string | ((dot: Dot) => string),
         },
         ctxMode?: CtxMode,
-        cache?: boolean,
+        colourful?: boolean,
         r?: number,
         initDotMode?: DotInitMode,
         pAmount?: number
@@ -78,14 +78,15 @@ export type DocumentDotConfig = {
 export type DocumentText = DocumentTextString | DocumentTextStringExtend | DocumentTextImageData;
 export type DocumentTextString = string;
 export type DocumentTextStringExtend = { text: DocumentTextString, fontSize?: number, initDotMode?: DotInitMode, ctxMode?: CtxMode, r?: number, color?: DotColor }
-export type DocumentTextImageData = { imageData: ImageData, initDotMode?: DotInitMode, ctxMode?: CtxMode, r?: number, color?: DotColor }
+export type DocumentTextImageData = { imageData: ImageData, initDotMode?: DotInitMode, ctxMode?: CtxMode, r?: number, color?: DotColor, offset?: Point }
 export type AnalyzeCanvasConfig = {
     imageData: ImageData,
     initDotMode?: DotInitMode,
     ctxMode?: CtxMode,
     r?: number,
     index?: number,
-    color?: DotColor
+    color?: DotColor,
+    offset?: Point
 }
 
 export enum CtxMode {

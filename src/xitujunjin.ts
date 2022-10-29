@@ -3,13 +3,34 @@ import './css/main.less'
 import DocumentDot from "./script/DocumentDot";
 // @ts-ignore
 import ImageTools from "./script/ImageTools";
-import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode, Point} from "./script/Type";
+// @ts-ignore
+import MobileDetect from "mobile-detect";
+import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode} from "./script/Type";
 
 (function () {
+    let mobileDetect = new MobileDetect(window.navigator.userAgent);
     let imageData;
+    // let canvas = document.createElement('canvas');
+    // canvas.width = window.innerWidth;
+    // canvas.height = window.innerHeight;
+    // canvas.style.position = 'fixed'
+    // canvas.style.top = '0'
+    // canvas.style.left = '0'
 
-    let texts: Array<DocumentText> = [];
-    texts = [{text: '稀土掘金', fontSize: 200}, {text: 'loading...', fontSize: 200}]
+    // document.body.append(canvas);
+
+    let texts: Array<DocumentText> = [{
+        text: "❤",
+        fontSize: 9999,
+        initDotMode: DotInitMode.Angle,
+        ctxMode: CtxMode.Stroke,
+        color: {fill: () => '#ff7272', stroke: () => '#ff7272'}
+    }];
+    texts = ['.']
+    //,'..','...'
+    // texts = ["1.", "2..", "3...", "文档粒子"];
+    // texts = [{text: 'A', color: {fill: () => 'red', stroke: () => 'red'}},
+    // {text: 'a', color: {fill: () => '#fff', stroke: () => '#fff'}}]
     const documentDot = new DocumentDot({
         box: document.body,
         canvasCount: 4,
@@ -26,37 +47,34 @@ import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode, Point} from "
         openingAnimation: false,
         dotConfig: {
             color: '#ff7272',
-            ctxMode: CtxMode.Fill,
+            ctxMode: CtxMode.FillStroke,
             r: 2,
-            colourful: true,
+            colourful: mobileDetect.mobile() == null,
             initDotMode: DotInitMode.Angle,
             pAmount: 100
         }
-    }, ".") as DocumentDot;
+    }, "") as DocumentDot;
     documentDot.animation();
     // @ts-ignore
     window.documentDot = documentDot;
-    loadDotsFormImage('https://s3.bmp.ovh/imgs/2022/10/28/6ef7620cdb16ebe6.png', (text) => {
-            texts.pop();
-            texts.push({...text, offset: {x: (documentDot.width - 960) / 2, y: (documentDot.height - 200) / 2}})
-        },
-        {
-            width: 960,
-            height: 200
-        });
+    texts = []
+    loadDotsFormImage('res/2.png', (text) => {
+        texts.push(text)
+    });
+    loadDotsFormImage('res/e.png', (text) => {
+        texts.push(text)
+    });
+    // loadDotsFormImage('res/2.png');
+    // loadDotsFormImage('res/b.png');
 
-
-    function loadDotsFormImage(src: string, callback: (text: DocumentTextImageData) => void, config?: { width: number, height: number }) {
+    function loadDotsFormImage(src: string, callback: (text: DocumentTextImageData) => void) {
         let image = new Image();
-        image.src = src+"?"+new Date().getTime();
-        image.setAttribute("crossOrigin","");
+        image.src = src;
         image.onload = function () {
             let can = document.createElement('canvas');
-            can.width = config?.width || documentDot.width;
-            can.height = config?.height || documentDot.height;
+            can.width = documentDot.width;
+            can.height = documentDot.height;
             let ctx = can.getContext('2d') as CanvasRenderingContext2D;
-
-            // @ts-ignore
             let c = ImageTools.contain({width: image.width, height: image.height}, {
                 width: can.width,
                 height: can.height

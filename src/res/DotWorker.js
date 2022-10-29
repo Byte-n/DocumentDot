@@ -21,7 +21,6 @@ function refreshCache(canvas, ctxMode, radius, color, data) {
       ctx.stroke();
       break;
   }
-  ctx.save();
 }
 
 let dataMap = {};
