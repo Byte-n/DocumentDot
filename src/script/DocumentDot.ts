@@ -46,7 +46,7 @@ class DocumentDot {
         color: DotColor,
         ctxMode: CtxMode,
         r: number,
-        cache: boolean,
+        colourful: boolean,
         initDotMode: DotInitMode,
         pAmount: number
     }
@@ -155,17 +155,17 @@ class DocumentDot {
             color: isDotColor ? dc : DefaultDotColor,
             ctxMode: param.dotConfig ? (param.dotConfig.ctxMode ? param.dotConfig.ctxMode : CtxMode.Fill) : CtxMode.Fill,
             r: 2,
-            cache: param.dotConfig ? (param.dotConfig.cache ? param.dotConfig.cache : false) : false,
+            colourful: param.dotConfig ? (param.dotConfig.colourful ? param.dotConfig.colourful : false) : false,
             initDotMode: param.dotConfig ? (param.dotConfig.initDotMode ? param.dotConfig.initDotMode : DotInitMode.Angle) : DotInitMode.Angle,
             pAmount: param.dotConfig ? (param.dotConfig.pAmount ? param.dotConfig.pAmount : 100) : 100
         };
         // 不开启缓存
-        if (!this.dotConfig.cache) {
+        if (!this.dotConfig.colourful) {
             let d = new Dot({targetDot: {x: 0, y: 0}, color: this.dotConfig.color, pAmount: 100});
             for (let i = 0; i < this.canvasList.length; i++) {
                 let ctx = this.canvasList[i].ctx;
-                 ctx.strokeStyle = this.dotConfig.color.stroke(d);
-                 ctx.fillStyle = this.dotConfig.color.fill(d);
+                ctx.strokeStyle = this.dotConfig.color.stroke(d);
+                ctx.fillStyle = this.dotConfig.color.fill(d);
             }
         }
         this.openingAnimation && this._openingAnimation();
@@ -360,6 +360,7 @@ class DocumentDot {
         let index = 0;
 
         return this._analyzeCanvas({
+            offset: config.offset,
             imageData,
             initDotMode,
             ctxMode,
@@ -380,7 +381,7 @@ class DocumentDot {
                 targetDot: {x: 0, y: 0},
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
-                cache: this.dotConfig.cache,
+                colourful: this.dotConfig.colourful,
                 pAmount: this.dotConfig.pAmount
             }),
             new Dot({
@@ -389,7 +390,7 @@ class DocumentDot {
                 targetDot: {x: 0, y: 0},
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
-                cache: this.dotConfig.cache,
+                colourful: this.dotConfig.colourful,
                 pAmount: this.dotConfig.pAmount
             }),
             new Dot({
@@ -398,7 +399,7 @@ class DocumentDot {
                 targetDot: {x: 0, y: 0},
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
-                cache: this.dotConfig.cache,
+                colourful: this.dotConfig.colourful,
                 pAmount: this.dotConfig.pAmount
             }),
             new Dot({
@@ -407,7 +408,7 @@ class DocumentDot {
                 targetDot: {x: 0, y: 0},
                 color: this.dotConfig.color,
                 ctxMode: this.dotConfig.ctxMode,
-                cache: this.dotConfig.cache,
+                colourful: this.dotConfig.colourful,
                 pAmount: this.dotConfig.pAmount
             })
         ]
@@ -448,7 +449,7 @@ class DocumentDot {
         let dots = this._data().concat([]);
         let len = this.canvasList.length;
         let len2 = dots.length;
-        let max = parseInt((len2 / (len )) + '');
+        let max = parseInt((len2 / (len)) + '');
         for (let i = 0; i < len; i++) {
             this._draw(dots.splice(0, max), this.canvasList[i]);
         }
@@ -467,10 +468,10 @@ class DocumentDot {
 
         ctx.clearRect(0, 0, this.width, this.height);
 
-        if (this.dotConfig.cache) {
+        if (this.dotConfig.colourful) {
             for (let i = 0; i < len; i++) {
                 d = dots[i];
-                if (d.cache) {
+                if (d.colourful) {
                     ctx.drawImage(d.canvas, (0.5 + d.currentDot.x) << 0, (0.5 + d.currentDot.y) << 0);
                 }
             }
@@ -508,10 +509,11 @@ class DocumentDot {
         let initDotMode = config.initDotMode;
         let ctxMode = config.ctxMode;
         let r = config.r || this.dotConfig.r;
-        let cache = this.dotConfig.cache;
+        let colourful = this.dotConfig.colourful;
         let imageData = config.imageData;
         let index = typeof config.index === 'number' ? config.index : 0;
         let color = config.color || this.dotConfig.color;
+        let offset = config.offset || {x: 0, y: 0}
         let dos = [];
         let __ = r <= 4 ? 1 : 2;
         for (let x = 0; x < imageData.width; x += ((r * 2) + __)) {
@@ -520,8 +522,8 @@ class DocumentDot {
                 if (imageData.data[i + 3] === 255) {
                     dos.push(
                         this._createDot({
-                            targetDot: {x, y},
-                            cache,
+                            targetDot: {x: x + offset.x, y: y + offset.y},
+                            colourful,
                             radius: r,
                             initDotMode,
                             boundary: {w: this.width, h: this.height},
@@ -584,7 +586,7 @@ class DocumentDot {
                 delay: config.delay,
                 color: config.color,
                 ctxMode: config.ctxMode,
-                cache: config.cache,
+                colourful: config.colourful,
                 index: config.index,
                 rgba: config.rgba,
                 pAmount: config.pAmount
@@ -600,7 +602,7 @@ class DocumentDot {
                 delay: config.delay,
                 color: config.color,
                 ctxMode: config.ctxMode,
-                cache: config.cache,
+                colourful: config.colourful,
                 index: config.index,
                 rgba: config.rgba,
                 pAmount: config.pAmount

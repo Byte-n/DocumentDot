@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script src="index.js"></script>
+<script>
+    console.log(window.DocumentDots)
+    let documentDot = new window.DocumentDots.DocumentDot({
+      box: document.body,
+      canvasCount: 4,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      marginX: 10,
+      marginY: 10,
+      callback: {
+        callback(_d) {
+        },
+        callbackType: 'forever'
+      },
+      openingAnimation: false,
+    });
+    documentDot.emitDot(
+      '123'
+    )
+</script>
+</body>
+</html>
