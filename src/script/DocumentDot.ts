@@ -78,7 +78,6 @@ class DocumentDot {
         if (!(typeof this.height === 'number' && this.height > 0)) {
             throw new Error(`你必须 提供一个有效的宽度，box 有固定高度，或指定 height: ${this.height}`);
         }
-        console.log(this);
         this.createMyCanvas(param.dotConfig?.colourful ? (param.canvasCount || 3) : 1);
         this.textCanvas = new OffscreenCanvas(this.width, this.height);
         // this.textCanvas.width = this.width;
@@ -169,7 +168,7 @@ class DocumentDot {
         let canvas = document.createElement('canvas');
         canvas.width = this.width;
         canvas.height = this.height;
-        canvas.style.position = 'fixed'
+        canvas.style.position = 'absolute'
         canvas.style.top = '0'
         canvas.style.left = '0'
         this.box.append(canvas);
@@ -223,6 +222,7 @@ class DocumentDot {
         if (!this.finished) {
             return;
         }
+        this.enabled = true;
         this.finished = true;
         this.finishCallback();
     }
@@ -467,10 +467,24 @@ class DocumentDot {
         if (this.finished) {
             this.finishCallback()
         } else {
-            this.rafId = window.requestAnimationFrame(this.executeDraw.bind(this));
+            setTimeout(() => {
+                this.rafId = window.requestAnimationFrame(this.executeDraw.bind(this));
+            }, 30)
         }
 
     }
+
+    public close () {
+        this.enabled = false;
+        window.cancelAnimationFrame(this.rafId);
+        this.finished = true;
+        this.dotList = [];
+        this.historyDot = [];
+        this.canvasList.forEach(({ canvas, ctx }) => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        })
+    }
+
 
     _draw(dots: Dot[], mc: MyCanvas) {
         let ctx = mc.ctx;

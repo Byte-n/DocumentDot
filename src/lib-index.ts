@@ -6,6 +6,6 @@ import ImageTools from './script/ImageTools.js'
 export {
     DocumentDot,
     Dot,
-    ImageTools,
+    ImageTools
 }
 export default DocumentDot;

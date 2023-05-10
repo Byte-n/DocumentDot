@@ -1,4 +1,4 @@
-import {CtxMode, DotColor, DotConfig, DotInitMode, Point, Rect, RGBA} from "./Type";
+import { CtxMode, DotColor, DotConfig, DotInitMode, Point, Rect, RGBA } from "./Type";
 // @ts-ignore
 import Easing from "./Easing";
 
@@ -235,6 +235,18 @@ export default class Dot {
                     x: Math.random() > 0.5 ? w + (this.radius * 2) : -(this.radius * 2),
                     y: Math.random() > 0.5 ? h + (this.radius * 2) : -(this.radius * 2)
                 };
+                break;
+            case DotInitMode.Middle:
+                this.initDot = {
+                    x: Math.floor((w / 2) - (this.radius / 2)),
+                    y: Math.floor((h / 2) - (this.radius / 2)),
+                }
+                break;
+            case DotInitMode.LeftBottom:
+                this.initDot = {
+                    x: 0,
+                    y: h + this.radius * 2,
+                }
                 break;
             default:
                 this.initDot = {

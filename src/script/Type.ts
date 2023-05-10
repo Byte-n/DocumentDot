@@ -94,7 +94,7 @@ export enum CtxMode {
 }
 
 export enum DotInitMode {
-    Round, Angle
+    Round, Angle, Middle,LeftBottom
 }
 
 export const DefaultDotColor: DotColor = {

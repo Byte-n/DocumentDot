@@ -11,8 +11,21 @@
     let documentDot = new window.DocumentDots.DocumentDot({
       box: document.body,
       height: window.innerHeight,
+      dotConfig: {
+        r: 2,
+        color: {
+          fill: '#000',
+          stroke: '#000'
+        },
+        cache: false,
+        ctxMode: 1,
+        initDotMode: 2
+      },
     },'Document\nDot');
     documentDot.emitDot('EmitDot')
+    setTimeout(() => {
+      console.log(documentDot.close());
+    }, 2000)
 </script>
 </body>
 </html>
