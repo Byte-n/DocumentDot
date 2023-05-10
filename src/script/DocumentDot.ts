@@ -37,6 +37,7 @@ class DocumentDot {
 
     textCtx: CanvasRenderingContext2D
     rafId: number = -1
+    rafIdTimer: number = -1
     fontSize = 500
     fontFamily = 'Consoles, Helvetica, Helvetica, Arial, sans-serif'
     marginX = 0
@@ -467,7 +468,7 @@ class DocumentDot {
         if (this.finished) {
             this.finishCallback()
         } else {
-            setTimeout(() => {
+            this.rafIdTimer = setTimeout(() => {
                 this.rafId = window.requestAnimationFrame(this.executeDraw.bind(this));
             }, 30)
         }
@@ -475,6 +476,7 @@ class DocumentDot {
     }
 
     public close () {
+        clearTimeout(this.rafIdTimer );
         this.enabled = false;
         window.cancelAnimationFrame(this.rafId);
         this.finished = true;
