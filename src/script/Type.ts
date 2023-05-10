@@ -49,8 +49,8 @@ export type MyCanvas = {
 export type DocumentDotConfig = {
     box: HTMLElement,
     canvasCount: number,
-    width: number,
-    height: number,
+    width?: number,
+    height?: number,
     callback?: DocumentDotConfigCallback,
     //是否有开场动画
     openingAnimation?: boolean,

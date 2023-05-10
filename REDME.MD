@@ -1,0 +1,25 @@
+# 文档粒子
+有待改进
+
+# 示例
+## script 脚本
+```html
+<!DOCTYPE html>
+<html lang="ch">
+<head>
+    <meta charset="UTF-8">
+    <title>Document-Dot</title>
+</head>
+<body>
+<!--build-lib 后： dist-lib/index.js-->
+<script src="/dist-lib/index.js"></script>
+<script>
+    let documentDot = new window.DocumentDots.DocumentDot({
+      box: document.body,
+      height: window.innerHeight,
+    },'Document\nDot');
+    documentDot.emitDot('EmitDot')
+</script>
+</body>
+</html>
+```

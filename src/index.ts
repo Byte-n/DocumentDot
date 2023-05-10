@@ -9,7 +9,7 @@ import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode, Point} from "
     let imageData;
 
     let texts: Array<DocumentText> = [];
-    texts = [{text: '稀土掘金', fontSize: 200}, {text: 'loading...', fontSize: 200}]
+    texts = [{text: 'Document-Dot', fontSize: 200}, {text: 'loading...', fontSize: 200}]
     const documentDot = new DocumentDot({
         box: document.body,
         canvasCount: 4,

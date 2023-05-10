@@ -19,6 +19,7 @@ import {
     DotInitMode, MyCanvas
 } from "./Type";
 import Dot from "./Dot";
+import { LogLevel } from "ts-loader/dist/logger";
 
 class DocumentDot {
 
@@ -57,26 +58,6 @@ class DocumentDot {
 
     canvasList: Array<MyCanvas> = []
 
-    createMyCanvas(count: number = 10) {
-        if (count < 0) {
-            return
-        }
-        let canvas = document.createElement('canvas');
-        canvas.width = this.width;
-        canvas.height = this.height;
-        canvas.style.position = 'fixed'
-        canvas.style.top = '0'
-        canvas.style.left = '0'
-        this.box.append(canvas);
-        this.canvasList.push({
-            canvas,
-            ctx: canvas.getContext('2d') as unknown as CanvasRenderingContext2D,
-            width: canvas.width,
-            height: canvas.height
-        })
-        this.createMyCanvas(--count)
-    }
-
     /**
      *  无法绘制的情况下，会直接跳过。
      *  以下情况无法绘制：字符集不支持，以及画板上内容无效。
@@ -84,11 +65,21 @@ class DocumentDot {
      * @param texts
      */
     constructor(param: DocumentDotConfig, ...texts: Array<DocumentText>) {
+        if (!(param.box instanceof HTMLElement)) {
+            throw new Error("box 无效");
+        }
         this.textArray = [...texts];
         this.box = param.box;
-        this.width = param.width;
-        this.height = param.height;
-        this.createMyCanvas(param.canvasCount);
+        this.width = param.width || this.box.clientWidth;
+        this.height = param.height || this.box.clientHeight;
+        if (!(typeof this.width === 'number' && this.width > 0)) {
+            throw new Error(`你必须 提供一个有效的宽度，box 有固定宽度，或指定 width: ${this.width}`);
+        }
+        if (!(typeof this.height === 'number' && this.height > 0)) {
+            throw new Error(`你必须 提供一个有效的宽度，box 有固定高度，或指定 height: ${this.height}`);
+        }
+        console.log(this);
+        this.createMyCanvas(param.dotConfig?.colourful ? (param.canvasCount || 3) : 1);
         this.textCanvas = new OffscreenCanvas(this.width, this.height);
         // this.textCanvas.width = this.width;
         // this.textCanvas.height = this.height;
@@ -169,6 +160,26 @@ class DocumentDot {
             }
         }
         this.openingAnimation && this._openingAnimation();
+    }
+
+    createMyCanvas(count: number = 10) {
+        if (count < 0) {
+            return
+        }
+        let canvas = document.createElement('canvas');
+        canvas.width = this.width;
+        canvas.height = this.height;
+        canvas.style.position = 'fixed'
+        canvas.style.top = '0'
+        canvas.style.left = '0'
+        this.box.append(canvas);
+        this.canvasList.push({
+            canvas,
+            ctx: canvas.getContext('2d') as unknown as CanvasRenderingContext2D,
+            width: canvas.width,
+            height: canvas.height
+        })
+        this.createMyCanvas(--count)
     }
 
     /**
