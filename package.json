@@ -1,7 +1,7 @@
 {
   "name": "document-dot",
   "version": "0.0.8",
-  "description": "",
+  "description": "document-dot",
   "main": "src/lib-index.ts",
   "scripts": {
     "build-w": "cross-env NODE_ENV=production webpack --watch ",
