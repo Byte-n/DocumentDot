@@ -8,42 +8,43 @@ import {CtxMode, DocumentText, DocumentTextImageData, DotInitMode, Point} from "
 (function () {
     let imageData;
 
-    let texts: Array<DocumentText> = [];
-    texts = [{text: 'Document-Dot', fontSize: 200}, {text: 'loading...', fontSize: 200}]
     const documentDot = new DocumentDot({
         box: document.body,
-        canvasCount: 4,
+        canvasCount: 1,
         width: window.innerWidth,
         height: window.innerHeight,
-        marginX: 10,
-        marginY: 10,
+        marginX: 100,
+        marginY: 50,
         callback: {
             callback(_d) {
-                _d.emitDot(...texts)
+                _d.emitDot(
+                  {text: '🚀', fontSize: 400},
+                  {text: '✈️', fontSize: 400}
+                )
             },
             callbackType: 'forever'
         },
         openingAnimation: false,
         dotConfig: {
-            color: '#ff7272',
-            ctxMode: CtxMode.Fill,
+            color: '#fff',
+            ctxMode: CtxMode.Stroke,
             r: 2,
             colourful: true,
             initDotMode: DotInitMode.Angle,
-            pAmount: 100
-        }
-    }, ".") as DocumentDot;
+            pAmount: 20
+        },
+    }, ".", {text: 'Document\nDot', fontSize: 200}) as DocumentDot;
     documentDot.animation();
     // @ts-ignore
     window.documentDot = documentDot;
-    loadDotsFormImage('https://s3.bmp.ovh/imgs/2022/10/28/6ef7620cdb16ebe6.png', (text) => {
-            texts.pop();
-            texts.push({...text, offset: {x: (documentDot.width - 960) / 2, y: (documentDot.height - 200) / 2}})
-        },
-        {
-            width: 960,
-            height: 200
-        });
+    // loadDotsFormImage('https://s3.bmp.ovh/imgs/2022/10/28/6ef7620cdb16ebe6.png', (text) => {
+    //         texts.pop();
+    //         texts.push({...text, offset: {x: (documentDot.width - 960) / 2, y: (documentDot.height - 200) / 2}})
+    //     },
+    //     {
+    //         width: 960,
+    //         height: 200
+    //     });
 
 
     function loadDotsFormImage(src: string, callback: (text: DocumentTextImageData) => void, config?: { width: number, height: number }) {
